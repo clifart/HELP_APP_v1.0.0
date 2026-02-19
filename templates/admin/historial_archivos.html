@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .hx-wrap { max-width: 1200px; margin: 0 auto; padding: 14px; }
+  .hx-top { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .hx-chip { border:1px solid #d4ddd9; border-radius:10px; background:#f4f7f6; padding:10px 12px; }
+
+  .op-window {
+    margin-top: 10px;
+    background: rgba(255, 255, 255, .14);
+    border: 1px solid rgba(22, 97, 79, .25);
+    border-radius: 14px;
+    padding: 10px;
+  }
+
+  .op-window__label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 6px;
+    font-size: 16px;
+  }
+
+  .op-window__row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .op-window__control {
+    flex: 1;
+    min-width: 320px;
+  }
+
+  .op-window__control .form-select {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid #c3cbc8;
+    height: 40px;
+    padding: 0 10px;
+    background: #fff;
+  }
+
+  .op-window__action .btn {
+    min-width: 170px;
+    border-radius: 9px;
+    font-weight: 700;
+  }
+
+  .op-window__meta {
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr;
+    gap: 8px 14px;
+    align-items: center;
+    font-size: 15px;
+  }
+
+  .op-window__meta strong { font-weight: 800; }
+
+  .hx-note { margin-top: 8px; opacity: .8; font-size: 13px; }
+  .hx-actions { margin-top: 10px; display:flex; gap:8px; flex-wrap:wrap; }
+  .hx-preview { margin-top: 12px; border:1px solid #d6deda; border-radius:10px; background:#fff; overflow:auto; }
+  .hx-preview table { width:100%; border-collapse: collapse; font-size:13px; }
+  .hx-preview th, .hx-preview td { border-bottom:1px solid #edf1ef; padding:8px; text-align:left; }
+  .hx-preview th { background:#f3f6f5; position: sticky; top: 0; }
+
+  @media (max-width: 900px) {
+    .op-window__meta { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="hx-wrap">
+  <div class="hx-top">
+    <h2 style="margin:0;">Archivos del historial central</h2>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <a class="btn btn-outline-success" href="{{ url_for('admin.panel') }}">Volver al panel</a>
+    </div>
+  </div>
+
+  <form class="hx-chip" method="GET" action="{{ url_for('admin.historial_archivos') }}">
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
+      <div>
+        <label for="tipo"><strong>Tipo</strong></label>
+        <select id="tipo" name="tipo" class="form-control">
+          <option value="" {% if not tipo %}selected{% endif %}>Todos</option>
+          <option value="admin" {% if tipo == 'admin' %}selected{% endif %}>Admin</option>
+          <option value="usuario" {% if tipo == 'usuario' %}selected{% endif %}>Usuario</option>
+        </select>
+      </div>
+      <div>
+        <label for="mes"><strong>Mes</strong></label>
+        <select id="mes" name="mes" class="form-control">
+          <option value="" {% if not mes %}selected{% endif %}>Todos</option>
+          {% for m in meses %}
+          <option value="{{ m }}" {% if mes == m %}selected{% endif %}>{{ m }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="flex:1; min-width:220px;">
+        <label for="q"><strong>Buscar</strong></label>
+        <input id="q" name="q" type="text" class="form-control" value="{{ q }}" placeholder="Nombre o ruta">
+      </div>
+      <button type="submit" class="btn btn-success">Filtrar</button>
+      <a href="{{ url_for('admin.historial_archivos') }}" class="btn btn-outline-secondary">Limpiar</a>
+    </div>
+  </form>
+
+  <div class="op-window">
+    <label for="archivo_select" class="op-window__label">Archivo</label>
+    <form method="GET" action="{{ url_for('admin.historial_archivos') }}">
+      <input type="hidden" name="tipo" value="{{ tipo }}">
+      <input type="hidden" name="mes" value="{{ mes }}">
+      <input type="hidden" name="q" value="{{ q }}">
+
+      <div class="op-window__row">
+        <div class="op-window__control">
+          <select id="archivo_select" name="archivo" class="form-select">
+            {% for r in rows %}
+            <option
+              value="{{ r.relpath }}"
+              data-idx="{{ loop.index }}"
+              data-tipo="{{ r.tipo }}"
+              data-mes="{{ r.mes }}"
+              data-dia="{{ r.dia }}"
+              data-nombre="{{ r.nombre }}"
+              data-ruta="{{ r.relpath }}"
+              data-size="{{ r.size_bytes }}"
+              data-modificado="{{ r.mtime }}"
+              data-download="{{ url_for('admin.historial_archivos_descargar', relpath=r.relpath) }}"
+              {% if archivo == r.relpath %}selected{% endif %}
+            >
+              {{ r.relpath }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="op-window__action">
+          <button type="submit" class="btn btn-success btn-sm">Ver archivo</button>
+        </div>
+      </div>
+    </form>
+
+    <div class="op-window__meta">
+      <div><strong>ID:</strong> <span id="meta_idx">{{ selected_idx if selected_idx else '-' }}</span></div>
+      <div><strong>Tipo:</strong> <span id="meta_tipo">{{ seleccionado.tipo if seleccionado else '-' }}</span></div>
+      <div><strong>Archivo:</strong> <span id="meta_nombre">{{ seleccionado.nombre if seleccionado else '-' }}</span></div>
+      <div><strong>Mes:</strong> <span id="meta_mes">{{ seleccionado.mes if seleccionado and seleccionado.mes else '-' }}</span></div>
+      <div><strong>Dia:</strong> <span id="meta_dia">{{ seleccionado.dia if seleccionado and seleccionado.dia else '-' }}</span></div>
+      <div><strong>Ruta:</strong> <span id="meta_ruta">{{ seleccionado.relpath if seleccionado else '-' }}</span></div>
+    </div>
+
+    <div class="hx-note">
+      Total archivos: {{ total }} | Ventana: {{ visible }} de {{ limite_selector }}
+    </div>
+
+    <div class="hx-actions">
+      {% if seleccionado and download_url %}
+      <a id="btn_descargar" class="btn btn-outline-success" href="{{ download_url }}">Descargar</a>
+      {% else %}
+      <a id="btn_descargar" class="btn btn-outline-success disabled" href="#">Descargar</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if not rows %}
+  <div class="hx-chip" style="margin-top:10px;">No hay archivos en HISTORIAL CENTRAL.</div>
+  {% elif seleccionado and seleccionado.ext == '.csv' %}
+  <div class="hx-preview">
+    <table>
+      <thead>
+        <tr>
+          {% for h in preview_headers %}
+          <th>{{ h }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in preview_rows %}
+        <tr>
+          {% for c in row %}
+          <td>{{ c }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% elif seleccionado %}
+  <div class="hx-chip" style="margin-top:10px;">Vista previa disponible solo para CSV.</div>
+  {% endif %}
+</div>
+
+<script>
+  (function () {
+    const sel = document.getElementById("archivo_select");
+    const metaIdx = document.getElementById("meta_idx");
+    const metaTipo = document.getElementById("meta_tipo");
+    const metaNombre = document.getElementById("meta_nombre");
+    const metaMes = document.getElementById("meta_mes");
+    const metaDia = document.getElementById("meta_dia");
+    const metaRuta = document.getElementById("meta_ruta");
+    const btnDesc = document.getElementById("btn_descargar");
+
+    if (!sel) return;
+
+    const sync = () => {
+      const opt = sel.options[sel.selectedIndex];
+      if (!opt) return;
+      metaIdx.textContent = opt.dataset.idx || "-";
+      metaTipo.textContent = opt.dataset.tipo || "-";
+      metaNombre.textContent = opt.dataset.nombre || "-";
+      metaMes.textContent = opt.dataset.mes || "-";
+      metaDia.textContent = opt.dataset.dia || "-";
+      metaRuta.textContent = opt.dataset.ruta || "-";
+      if (btnDesc) {
+        const dl = opt.dataset.download || "#";
+        btnDesc.setAttribute("href", dl);
+        btnDesc.classList.remove("disabled");
+      }
+    };
+
+    sel.addEventListener("change", sync);
+    sync();
+  })();
+</script>
+{% endblock %}

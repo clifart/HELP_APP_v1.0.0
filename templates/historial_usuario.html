@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+
+  <!-- 🔹 ENCABEZADO -->
+  <div class="panel-header mb-3 text-center">
+    <h2>📜 Historial de Tareas Finalizadas</h2>
+    <p class="saludo-usuario">
+      Bienvenido(a), <strong>{{ usuario }}</strong>. Aquí puedes consultar las órdenes de producción finalizadas.
+    </p>
+  </div>
+
+  <!-- 🔹 BOTÓN VOLVER -->
+  <a href="{{ url_for('usuario.panel') }}" class="btn btn-secondary mb-3">⬅️ Volver al Panel</a>
+
+  <!-- 🔹 TABLA DE HISTORIAL -->
+  <table class="table table-bordered table-hover align-middle text-center">
+    <thead style="background-color: #15614f; color: white;">
+      <tr>
+        <th>ID</th>
+        <th>OP No.</th>
+        <th>Descripción</th>
+        <th>Cantidad</th>
+        <th>H.inicio</th>
+        <th>H.final</th>
+        <th>T.tarea</th>
+        <th>H.extras</th>
+        <th>T.pausado</th>
+        <th>Cierre</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if tareas and tareas|length > 0 %}
+      {% for t in tareas %}
+      <tr>
+        <!-- id autoincremental del historial -->
+        <td>{{ t.id }}</td>
+
+        <!-- OP No. guardado en historial_tareas.op_no -->
+        <td>{{ t.op_no }}</td>
+
+        <!-- Descripción guardada en historial_tareas.descripcion -->
+        <td>{{ t.descripcion }}</td>
+
+        <!-- Cantidad guardada -->
+        <td>{{ t.cantidad }}</td>
+
+        <!-- Hora de inicio guardada en historial_tareas.hora_inicio -->
+        <td>{{ t.hora_inicio or '-' }}</td>
+
+        <!-- Hora de finalización guardada en historial_tareas.hora_finalizacion -->
+        <td>{{ t.hora_finalizacion or '-' }}</td>
+
+        <!-- Tiempo total usado guardado en historial_tareas.tiempo_total -->
+        <td>{{ t.tiempo_total or '-' }}</td>
+
+        <!-- Horas extras guardadas en historial_tareas.horas_extras -->
+        <td>{{ t.horas_extras or '00:00:00' }}</td>
+
+        <!-- Tiempo acumulado en pausa guardado en historial_tareas.tiempo_pausado -->
+        <td>{{ t.tiempo_pausado or '00:00:00' }}</td>
+
+        <!-- Indicador de cierre -->
+        <td>{{ 'Auto' if (t.cierre_automatico or 0)|int == 1 else 'Manual' }}</td>
+      </tr>
+      {% endfor %}
+      {% else %}
+      <tr>
+        <td colspan="10" class="text-muted">
+          No hay tareas finalizadas registradas.
+        </td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+</div>
+{% endblock %}

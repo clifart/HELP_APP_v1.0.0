@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .hx-wrap{max-width:1100px;margin:0 auto;padding:18px 16px 22px;}
+  .hx-card{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:16px;
+           box-shadow:0 10px 26px rgba(0,0,0,.10);overflow:hidden}
+  .hx-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;
+           background:linear-gradient(180deg, rgba(0,0,0,.10), rgba(255,255,255,.06));}
+  .hx-title{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;}
+  .hx-sub{opacity:.85;font-size:13px;margin-top:2px}
+  .hx-path{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+           font-size:12px;background:rgba(0,0,0,.20);padding:6px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.18)}
+  .hx-body{padding:14px 16px 16px;}
+
+  .hx-actions{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px;}
+  .hx-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;
+          border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.16);color:#fff;text-decoration:none;
+          font-weight:700;font-size:14px; cursor:pointer;}
+  .hx-btn:hover{background:rgba(0,0,0,.24)}
+  .hx-btn.back{background: rgba(255,193,7,.22);border-color: rgba(255,193,7,.40);color:#083b22}
+  .hx-btn.back:hover{background: rgba(255,193,7,.30);}
+
+  .hx-empty{padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.14);
+            border:1px solid rgba(255,255,255,.18);color:#0b1b12}
+
+  .hx-selectwrap{margin-top:6px;}
+  .hx-label{display:block;font-weight:800;margin:6px 0 8px;color:#0b1b12;opacity:.95;}
+
+  .hx-selectrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+
+  .hx-select{
+    min-width:240px;
+    max-width:360px;
+    width:100%;
+    padding:12px 14px;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,.22);
+    background:rgba(255,255,255,.16);
+    color:#0b1b12;
+    font-weight:800;
+    outline:none;
+  }
+  .hx-select option{color:#0b1b12;}
+  .hx-select:focus{
+    border-color: rgba(255,193,7,.55);
+    box-shadow: 0 0 0 3px rgba(255,193,7,.18);
+  }
+
+  .hx-hint{margin-top:8px;font-size:12px;opacity:.85;color:#0b1b12;}
+
+  /* FIX: forzar visibilidad del select y sus opciones */
+  #sel_dia{
+    background:#dff3ea !important;
+    color:#0b1b12 !important;
+    border:1px solid rgba(0,0,0,.18) !important;
+  }
+  #sel_dia option{
+    background:#ffffff !important;
+    color:#0b1b12 !important;
+  }
+</style>
+
+<div class="hx-wrap">
+  <div class="hx-card">
+    <div class="hx-head">
+      <div>
+        <div class="hx-title">🗂️ Tareas diarias (explorador web)</div>
+        <div class="hx-sub">Selecciona una fecha para ver/descargar archivos del día.</div>
+      </div>
+      <div class="hx-path" title="Ruta en el servidor">{{ base }}</div>
+    </div>
+
+    <div class="hx-body">
+      <div class="hx-actions">
+        <a class="hx-btn back" href="{{ url_for('admin.panel') }}">⬅ Panel</a>
+        <a class="hx-btn" href="{{ url_for('admin.carpeta_diaria') }}">📁 Ir a HOY</a>
+      </div>
+
+      {% if not dias %}
+        <div class="hx-empty"><b>No hay carpetas todavía.</b></div>
+      {% else %}
+        <div class="hx-selectwrap">
+          <label class="hx-label" for="sel_dia">📁 Selecciona una fecha</label>
+
+          <div class="hx-selectrow">
+            <!-- ✅ Listbox: mostrar exactamente 3 visibles -->
+            <select id="sel_dia" class="hx-select" size="10">
+              {% for d in dias %}
+                <option value="{{ url_for('admin.carpeta_diaria', fecha=d) }}?lite=1">{{ d }}</option>
+              {% endfor %}
+            </select>
+
+            <!-- ✅ Botón deshabilitado si no hay selección -->
+            <button id="btn_ir" type="button" class="hx-btn ok" disabled>→ Abrir</button>
+          </div>
+
+          <div class="hx-hint">Tip: la lista está ordenada con el día más reciente arriba.</div>
+        </div>
+
+        <script>
+          (function(){
+            const sel = document.getElementById("sel_dia");
+            const btn = document.getElementById("btn_ir");
+            if(!sel || !btn) return;
+
+            function syncBtn(){
+              btn.disabled = !sel.value;
+            }
+
+            btn.addEventListener("click", function(){
+              const url = sel.value;
+              if(!url) return;
+              window.open(url, "_blank", "noopener,noreferrer");
+            });
+
+            sel.addEventListener("dblclick", function(){
+              if(this.value) window.open(this.value, "_blank", "noopener,noreferrer");
+            });
+
+            sel.addEventListener("change", syncBtn);
+
+            // HTML suele preseleccionar el 1ro si hay opciones; esto lo respeta
+            syncBtn();
+          })();
+        </script>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

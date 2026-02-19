@@ -1,0 +1,48 @@
+/* BOTÓN HISTORIAL — PANEL USUARIO */
+.btn-historial-usuario {
+  background-color: #2e7d32;     /* verde HELP_APP */
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-historial-usuario:hover {
+  background-color: #1b5e20;     /* tono más oscuro al pasar el mouse */
+  transform: scale(1.05);
+}
+
+.btn-historial-usuario:active {
+  transform: scale(0.97);
+}
+
+/* BOTÓN HISTORIAL — FIJO EN PANEL USUARIO */
+.boton-historial-fijo {
+  position: absolute;
+  top: 25px;
+  right: 40px;
+  z-index: 10;
+}
+
+.btn-historial-usuario {
+  background-color: #2e7d32;
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.btn-historial-usuario:hover {
+  background-color: #1b5e20;
+  transform: scale(1.05);
+}

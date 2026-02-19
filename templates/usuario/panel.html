@@ -1,0 +1,1266 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+
+    <!-- Botón historial usuario -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='botones/boton_historial_usuario.css') }}">
+    <div class="boton-historial-fijo">
+        {% include 'componentes/boton_historial_usuario.html' %}
+    </div>
+
+    <!-- ENCABEZADO -->
+    <div class="panel-header text-center">
+        <h2>🗓️ Mis Tareas de Hoy</h2>
+        <p class="saludo-usuario">
+            Bienvenido(a), <strong>{{ session['usuario'] or 'Usuario' }}</strong>.<br>
+            Aquí puedes registrar tus actividades y tiempos de trabajo.
+        </p>
+    </div>
+
+    <!-- FORMULARIO NUEVA TAREA -->
+    <form id="form-tarea" class="form-inline" method="POST" action="{{ url_for('usuario.agregar') }}">
+
+        <!-- Combo OP (solo catálogo del admin) -->
+        <select name="titulo" id="op-select" class="form-select" required>
+            <option value="">Seleccione OP...</option>
+
+            {% for r in ops %}
+            {% set titulo = (r['titulo'] if r is mapping else r.titulo) %}
+            {% set desc = (r['descripcion'] if r is mapping else r.descripcion) %}
+            <option value="{{ titulo }}" data-desc="{{ (desc|default(''))|e }}" {% if op_preseleccionada and
+                (titulo|trim)==(op_preseleccionada|trim) %}selected{% endif %}>
+                {{ titulo }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <!-- ✅ DESCRIPCIÓN como LISTA (FUNCIONAL) -->
+        <select name="descripcion" id="desc-select" class="form-select" required>
+            <option value="">Seleccione descripción...</option>
+            {% for r in ops %}
+            {% set titulo = (r['titulo'] if r is mapping else r.titulo) %}
+            {% set desc = (r['descripcion'] if r is mapping else r.descripcion) %}
+            {% if desc %}
+            <option value="{{ desc }}" data-op="{{ titulo }}">{{ desc }}</option>
+            {% endif %}
+            {% endfor %}
+        </select>
+
+        <!-- Tarea / Proceso -->
+        <select id="tareaSelect" name="tarea" class="form-select" required>
+            <option value="" disabled selected>Selecciona tarea...</option>
+            <option value="CORTE">CORTE</option>
+            <option value="ALISTAMIENTO">ALISTAMIENTO</option>
+            <option value="Impresión SORMZ">Impresión SORMZ</option>
+            <option value="Impresión GTO46">Impresión GTO46</option>
+            <option value="Impresión FLEXO">Impresión FLEXO</option>
+            <option value="Impresión DIGITAL">Impresión DIGITAL</option>
+            <option value="BARNIZ">BARNIZ</option>
+            <option value="PLEGADO">PLEGADO</option>
+            <option value="PLASTIFICADO">PLASTIFICADO</option>
+            <option value="Auxiliar PLASTIFICADO">Auxiliar PLASTIFICADO</option>
+            <option value="TROQUELADO">TROQUELADO</option>
+            <option value="DESCARTONE">DESCARTONE</option>
+            <option value="PEGUE">PEGUE</option>
+            <option value="Auxiliar PEGUE">Auxiliar PEGUE</option>
+            <option value="ENCUADERNACION">ENCUADERNACIÓN</option>
+            <option value="REVISIÓN">REVISION</option>
+            <option value="REPROCESO">REPROCESO</option>
+            <option value="MANTENIMIENTO">MANTENIMIENTO</option>
+            <option value="VARIOS">VARIOS</option>
+        </select>
+
+        <!-- ✅ NUEVO: flag para confirmar continuar -->
+        <input type="hidden" name="force_continue" id="force_continue" value="0">
+
+        <!-- Botón -->
+        <button type="submit" class="btn-agregar">ACEPTAR</button>
+    </form>
+
+    <!-- 🔹 CONTENEDOR RESPONSIVO PARA LA TABLA -->
+    <div class="tabla-tareas-wrapper">
+        <!-- TABLA DE TAREAS -->
+        <table class="table table-bordered mt-3" id="tablaTareas">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>OP No.</th>
+                    <th>Descripción</th>
+                    <th>Tarea</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Cantidad</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+
+            <tbody id="tbodyTareas">
+                {% if tareas and tareas|length > 0 %}
+                {% for t in tareas %}
+
+                {# ✅ helpers para mostrar HH:MM sin perder el valor real #}
+                {% set ini_raw = (t.get('inicio') or '') %}
+                {% set fin_raw = (t.get('fin') or '') %}
+
+                {% set ini_s = (ini_raw|string)|trim %}
+                {% set fin_s = (fin_raw|string)|trim %}
+
+                {% set ini_hhmm = ini_s %}
+                {% if ini_s and (ini_s|length) >= 16 and (ini_s[4] == '-') and (ini_s[7] == '-') and (ini_s[10] == ' ')
+                %}
+                {% set ini_hhmm = ini_s[11:16] %}
+                {% elif ini_s and (ini_s|length) >= 5 and (ini_s[2] == ':') %}
+                {% set ini_hhmm = ini_s[0:5] %}
+                {% endif %}
+
+                {% set fin_hhmm = fin_s %}
+                {% if fin_s and (fin_s|length) >= 16 and (fin_s[4] == '-') and (fin_s[7] == '-') and (fin_s[10] == ' ')
+                %}
+                {% set fin_hhmm = fin_s[11:16] %}
+                {% elif fin_s and (fin_s|length) >= 5 and (fin_s[2] == ':') %}
+                {% set fin_hhmm = fin_s[0:5] %}
+                {% endif %}
+
+                <tr data-id="{{ t.get('id') }}" data-estado="{{ t.get('estado') or '' }}"
+                    data-checklist-ok="{{ 1 if t.get('checklist_ok') else 0 }}"
+                    data-omite-controles="{{ 1 if t.get('omite_controles') else 0 }}" data-op="{{ t.get('op') or '' }}"
+                    data-descripcion="{{ t.get('descripcion') or '' }}" data-tarea="{{ t.get('tarea') or '' }}" {# ✅ lo
+                    importante: guardamos raw para backend #} data-inicio="{{ ini_s }}" data-fin="{{ fin_s }}"
+                    data-extendido="{{ t.get('horario_extendido') or 0 }}">
+                    <!-- 1) ID -->
+                    <td>{{ t.get('id') }}</td>
+
+                    <!-- 2) OP No. -->
+                    <td>{{ t.get('op') }}</td>
+
+                    <!-- 3) Descripción -->
+                    <td>{{ t.get('descripcion') }}</td>
+
+                    <!-- 4) Tarea -->
+                    <td>{{ t.get('tarea') }}</td>
+
+                    <!-- 5) Inicio (solo HH:MM en UI) -->
+                    <td>{{ ini_hhmm if ini_s else '-' }}</td>
+
+                    <!-- 6) Fin (solo HH:MM en UI) -->
+                    <td>{{ fin_hhmm if fin_s else '-' }}</td>
+
+                    <!-- 7) Cantidad -->
+                    <td>
+                        <input type="number" min="0" class="cantidad-input" value="{{ t.get('cantidad') or 0 }}"
+                            disabled>
+                    </td>
+
+                    <!-- 8) Acción -->
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm btn-finalizar" data-id="{{ t.get('id') }}"
+                            disabled>
+                            Finalizar
+                        </button>
+
+                        <!-- ✅ Checklist: el JS añadirá ?id=&op_no=&proceso= -->
+                        <a href="{{ url_for('usuario.checklist_impresion') }}"
+                            class="btn btn-primary btn-sm btn-checklist{% if t.get('checklist_ok') or t.get('omite_controles') %} disabled{% endif %}"
+                            data-locked="{{ 1 if t.get('checklist_ok') or t.get('omite_controles') else 0 }}"
+                            aria-disabled="{{ 'true' if t.get('checklist_ok') or t.get('omite_controles') else 'false' }}"
+                            {% if t.get('checklist_ok') or t.get('omite_controles') %}tabindex="-1" {% endif %}>
+                            Checklist
+                        </a>
+
+                        <!-- ✅ Pausa -->
+                        <button type="button" class="btn btn-secondary btn-sm btn-pausa" data-id="{{ t.get('id') }}">
+                            Pausa
+                        </button>
+
+                        <!-- ✅ Reanudar (arranca oculto) -->
+                        <button type="button" class="btn btn-success btn-sm btn-reanudar" data-id="{{ t.get('id') }}"
+                            style="display:none;">
+                            Reanudar
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center">Sin tareas</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- BOTÓN CERRAR SESIÓN -->
+    <a href="{{ url_for('login') }}" class="btn-cerrar">
+        Cerrar Sesión
+    </a>
+
+    <!-- ALERTA -->
+    <div id="alertaCustom" class="alerta-oculta">
+        ⚠️ <span id="mensajeCustom"></span>
+    </div>
+
+    <!-- AVISO HORARIO EXTENDIDO -->
+    <div id="avisoHorarioExt" class="aviso-extender oculto" role="dialog" aria-modal="true">
+        <div class="aviso-extender-card">
+            <h4>⚠️ Límite de 8 horas alcanzado</h4>
+            <p id="avisoHorarioExtMsg">Esta tarea superó las 8 horas en curso.</p>
+            <p class="aviso-extender-countdown">
+                Se cerrará automáticamente en <span id="avisoHorarioExtCountdown">30</span> segundos.
+            </p>
+            {% if session.get('clave_tecnica') %}
+            <div class="aviso-extender-auditoria">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnToggleAuditoria">
+                    Ver auditoría
+                </button>
+                <p class="aviso-extender-meta oculto" id="avisoAuditoriaDetalle">
+                    Inicio aviso: <span id="avisoHoraInicio">--:--:--</span> ·
+                    Fin estimado: <span id="avisoHoraFinEst">--:--:--</span> ·
+                    Fin real: <span id="avisoHoraFinReal">--:--:--</span>
+                </p>
+            </div>
+            {% endif %}
+            <div class="aviso-extender-actions">
+                <button type="button" class="btn btn-success" id="btnContinuarExtendido">
+                    Continuar como horario extendido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .alerta-oculta {
+        position: fixed;
+        top: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #ffc107;
+        color: #222;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 500;
+        display: none;
+        z-index: 2000;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .oculto {
+        display: none;
+    }
+
+    .aviso-extender {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 3000;
+    }
+
+    .aviso-extender.oculto {
+        display: none;
+    }
+
+    .aviso-extender-card {
+        background: #ffffff;
+        color: #222;
+        border-radius: 12px;
+        padding: 18px 20px;
+        width: 92%;
+        max-width: 520px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        text-align: center;
+    }
+
+    .aviso-extender-card h4 {
+        margin-bottom: 8px;
+    }
+
+    .aviso-extender-countdown {
+        margin-top: 8px;
+        font-weight: 600;
+    }
+
+    .aviso-extender-meta {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #2f2f2f;
+    }
+
+    .aviso-extender-auditoria {
+        margin-top: 8px;
+    }
+
+    .aviso-extender-actions {
+        margin-top: 12px;
+    }
+
+    .btn-finalizar {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 5px 10px;
+    }
+
+    .btn-agregar {
+        background-color: #0f6a4f;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 12px;
+        margin-left: 8px;
+    }
+
+    .btn-cerrar {
+        margin-top: 20px;
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 12px;
+        display: inline-block;
+        text-decoration: none;
+    }
+
+    /* 🔹 Botón Checklist */
+    .btn-checklist {
+        background-color: #0d6efd;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 12px;
+        margin-left: 6px;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-checklist:hover {
+        opacity: 0.9;
+        color: #fff;
+    }
+
+    .form-inline-mini {
+        display: inline;
+    }
+
+    .btn-pausa {
+        background: #6c757d;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 12px;
+        margin-left: 6px;
+        cursor: pointer;
+    }
+
+    .btn-reanudar {
+        background: #198754;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 12px;
+        margin-left: 6px;
+        cursor: pointer;
+    }
+
+    tr.row-pausada {
+        opacity: .72;
+    }
+
+    a.bloqueado {
+        pointer-events: none;
+        opacity: .6;
+    }
+
+    /* 🔹 Contenedor de tabla responsivo (clave para celular) */
+    .tabla-tareas-wrapper {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    #tablaTareas {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    /* 📱 Ajustes para pantallas pequeñas */
+    @media (max-width: 576px) {
+        .container {
+            padding: 0 8px;
+        }
+
+        .panel-header h2 {
+            font-size: 1.3rem;
+        }
+
+        .panel-header p {
+            font-size: 0.85rem;
+        }
+
+        #form-tarea {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #form-tarea .form-select,
+        #form-tarea .btn-agregar {
+            width: 100%;
+            margin-left: 0;
+        }
+
+        #tablaTareas th,
+        #tablaTareas td {
+            padding: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+
+        .btn-finalizar,
+        .btn-checklist,
+        .btn-pausa,
+        .btn-reanudar {
+            display: block;
+            width: 100%;
+            margin: 2px 0;
+            text-align: center;
+        }
+
+        .btn-cerrar {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+
+<script>
+    // ===== ALERTA =====
+    function mostrarAlerta(msg) {
+        const alerta = document.getElementById('alertaCustom');
+        document.getElementById('mensajeCustom').textContent = msg;
+        alerta.style.display = 'block';
+        setTimeout(() => alerta.style.display = 'none', 3000);
+    }
+
+    // ===== AUTO-CIERRE POR 8 HORAS =====
+    // ✅ MODO PRUEBA: poner 30 para avisar 30s después de iniciar
+    // (dejar en 0 para volver a 8 horas)
+    const DEBUG_AVISO_SEG = Number('{{ debug_aviso_seg|default(0)|int }}');
+    const LIMITE_HORAS_MS = (DEBUG_AVISO_SEG > 0 ? DEBUG_AVISO_SEG : 8 * 60 * 60) * 1000;
+    const AVISO_MS = 30 * 1000;
+
+    const avisoModal = document.getElementById("avisoHorarioExt");
+    const avisoMsg = document.getElementById("avisoHorarioExtMsg");
+    const avisoCountdown = document.getElementById("avisoHorarioExtCountdown");
+    const btnContinuarExtendido = document.getElementById("btnContinuarExtendido");
+    const btnToggleAuditoria = document.getElementById("btnToggleAuditoria");
+    const avisoAuditoriaDetalle = document.getElementById("avisoAuditoriaDetalle");
+    const avisoHoraInicio = document.getElementById("avisoHoraInicio");
+    const avisoHoraFinEst = document.getElementById("avisoHoraFinEst");
+    const avisoHoraFinReal = document.getElementById("avisoHoraFinReal");
+
+    let avisoActivo = null;
+    let avisoTimeout = null;
+    let avisoInterval = null;
+    const colaAvisos = [];
+
+    // ===== HORARIOS LABORALES =====
+    const HORARIOS = {
+        diurno: {
+            0: [[360, 1320]],  // Lun 06:00-22:00
+            1: [[360, 1320]],  // Mar
+            2: [[360, 1320]],  // Mie
+            3: [[360, 1320]],  // Jue
+            4: [[360, 1320]],  // Vie
+            5: [[360, 720]],   // Sab 06:00-12:00 (6-10 y 8-12 -> 6-12)
+            6: []              // Dom descanso
+        },
+        nocturno: {
+            0: [[1230, 1440]],                 // Lun 20:30-24:00
+            1: [[0, 360], [1230, 1440]],       // Mar 00:00-06:00 y 20:30-24:00
+            2: [[0, 360], [1230, 1440]],       // Mie
+            3: [[0, 360], [1230, 1440]],       // Jue
+            4: [[0, 360], [1290, 1440]],       // Vie 00:00-06:00 y 21:30-24:00
+            5: [[0, 360]],                       // Sab 00:00-06:00 (madrugada del turno viernes)
+            6: []                               // Dom descanso
+        }
+    };
+
+    function _dowLunes0(dateObj) {
+        return (dateObj.getDay() + 6) % 7;
+    }
+
+    function _ventanasDia(dow, turno) {
+        const t = (turno || "diurno").toLowerCase();
+        return (HORARIOS[t] && HORARIOS[t][dow]) ? HORARIOS[t][dow] : [];
+    }
+
+    function _estaEnVentana(dateObj, turno) {
+        const dow = _dowLunes0(dateObj);
+        const min = dateObj.getHours() * 60 + dateObj.getMinutes();
+        const ventanas = _ventanasDia(dow, turno);
+        for (const [ini, fin] of ventanas) {
+            if (ini <= min && min < fin) return true;
+        }
+        return false;
+    }
+
+    function _finVentanaActual(dateObj, turno) {
+        const dow = _dowLunes0(dateObj);
+        const min = dateObj.getHours() * 60 + dateObj.getMinutes();
+        const ventanas = _ventanasDia(dow, turno);
+        for (const [ini, fin] of ventanas) {
+            if (ini <= min && min < fin) {
+                if (fin === 1440) {
+                    return new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate() + 1, 0, 0, 0, 0);
+                }
+                const fh = Math.floor(fin / 60);
+                const fm = fin % 60;
+                return new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), fh, fm, 0, 0);
+            }
+        }
+        return null;
+    }
+
+    function _inferirTurno(inicioDate) {
+        if (!inicioDate) return "diurno";
+        const dow = _dowLunes0(inicioDate);
+        const min = inicioDate.getHours() * 60 + inicioDate.getMinutes();
+        const noct = _ventanasDia(dow, "nocturno");
+        for (const [ini, fin] of noct) {
+            if (ini <= min && min < fin) return "nocturno";
+        }
+        return "diurno";
+    }
+
+    function _segundosLaboralesEntre(inicio, fin, turno) {
+        if (!inicio || !fin || fin <= inicio) return 0;
+        let total = 0;
+        let day = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate());
+        const endDay = new Date(fin.getFullYear(), fin.getMonth(), fin.getDate());
+
+        while (day <= endDay) {
+            const dow = _dowLunes0(day);
+            const ventanas = _ventanasDia(dow, turno);
+            for (const [iniMin, finMin] of ventanas) {
+                const iniH = Math.floor(iniMin / 60);
+                const iniM = iniMin % 60;
+                const winStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), iniH, iniM, 0, 0);
+
+                let winEnd;
+                if (finMin === 1440) {
+                    winEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1, 0, 0, 0, 0);
+                } else {
+                    const finH = Math.floor(finMin / 60);
+                    const finM = finMin % 60;
+                    winEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), finH, finM, 0, 0);
+                }
+
+                const start = inicio > winStart ? inicio : winStart;
+                const end = fin < winEnd ? fin : winEnd;
+                if (end > start) {
+                    total += (end - start) / 1000;
+                }
+            }
+            day.setDate(day.getDate() + 1);
+            day.setHours(0, 0, 0, 0);
+        }
+        return Math.max(0, Math.floor(total));
+    }
+
+    function _sumarLaboralDesde(desde, segundos, turno) {
+        let restante = Math.max(0, Math.floor(segundos));
+        let day = new Date(desde.getFullYear(), desde.getMonth(), desde.getDate());
+        let cursor = new Date(desde);
+
+        for (let i = 0; i < 14; i++) {
+            const dow = _dowLunes0(day);
+            const ventanas = _ventanasDia(dow, turno);
+
+            for (const [iniMin, finMin] of ventanas) {
+                const iniH = Math.floor(iniMin / 60);
+                const iniM = iniMin % 60;
+                const winStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), iniH, iniM, 0, 0);
+
+                let winEnd;
+                if (finMin === 1440) {
+                    winEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1, 0, 0, 0, 0);
+                } else {
+                    const finH = Math.floor(finMin / 60);
+                    const finM = finMin % 60;
+                    winEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), finH, finM, 0, 0);
+                }
+
+                if (winEnd <= cursor) continue;
+                const start = cursor > winStart ? cursor : winStart;
+                const disponible = Math.max(0, (winEnd - start) / 1000);
+                if (disponible <= 0) continue;
+
+                if (disponible >= restante) {
+                    return new Date(start.getTime() + restante * 1000);
+                }
+                restante -= disponible;
+            }
+
+            day.setDate(day.getDate() + 1);
+            day.setHours(0, 0, 0, 0);
+            cursor = new Date(day);
+        }
+        return null;
+    }
+
+    function _msHastaLimite(inicio, ahora, turno) {
+        const trabajados = _segundosLaboralesEntre(inicio, ahora, turno);
+        const restante = (LIMITE_HORAS_MS / 1000) - trabajados;
+        const finVentana = _finVentanaActual(ahora, turno);
+        if (!finVentana) {
+            return 0; // fuera de turno: autocierre inmediato
+        }
+        if (restante <= 0) return 0;
+        const target = _sumarLaboralDesde(ahora, restante, turno);
+        if (!target) return null;
+        const msHasta = Math.max(0, target.getTime() - ahora.getTime());
+        const msFin = Math.max(0, finVentana.getTime() - ahora.getTime());
+        return Math.min(msHasta, msFin);
+    }
+
+    function _parseFechaHora(raw) {
+        const s = (raw || "").trim();
+        if (!s) return null;
+
+        let m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+        if (m) {
+            return new Date(
+                Number(m[1]),
+                Number(m[2]) - 1,
+                Number(m[3]),
+                Number(m[4]),
+                Number(m[5]),
+                Number(m[6] || 0)
+            );
+        }
+
+        m = s.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
+        if (m) {
+            const now = new Date();
+            return new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate(),
+                Number(m[1]),
+                Number(m[2]),
+                Number(m[3] || 0)
+            );
+        }
+
+        return null;
+    }
+
+    function _fmtHora(d) {
+        if (!d) return "--:--:--";
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        const ss = String(d.getSeconds()).padStart(2, '0');
+        return `${hh}:${mm}:${ss}`;
+    }
+
+    function _encolarAviso(fila) {
+        if (!fila || !document.body.contains(fila)) return;
+        if ((fila.dataset.extendido || "0") === "1") return;
+        if ((fila.dataset.estado || "").trim() !== "En curso") return;
+        if (fila.dataset.avisoEncolado === "1") return;
+
+        fila.dataset.avisoEncolado = "1";
+        colaAvisos.push(fila);
+        _tryMostrarAviso();
+    }
+
+    function _tryMostrarAviso() {
+        if (avisoActivo) return;
+        const siguiente = colaAvisos.shift();
+        if (!siguiente) return;
+        _mostrarAviso(siguiente);
+    }
+
+    function _mostrarAviso(fila) {
+        if (!avisoModal) return;
+        avisoActivo = fila;
+
+        const op = (fila.dataset.op || "").trim();
+        const tarea = (fila.dataset.tarea || "").trim();
+        const inicio = _parseFechaHora(fila.dataset.inicio || "");
+        const turno = _inferirTurno(inicio);
+        const fueraTurno = !_estaEnVentana(new Date(), turno);
+
+        if (avisoMsg) {
+            const etiqueta = [
+                tarea ? `Tarea: ${tarea}` : "",
+                op ? `OP: ${op}` : ""
+            ].filter(Boolean).join(" | ");
+            const base = fueraTurno
+                ? "Esta tarea salió del rango de turno."
+                : "Esta tarea superó las 8 horas en curso.";
+            avisoMsg.textContent = etiqueta ? `${base} ${etiqueta}` : base;
+        }
+
+        let restante = Math.ceil(AVISO_MS / 1000);
+        if (avisoCountdown) avisoCountdown.textContent = String(restante);
+        if (btnContinuarExtendido) btnContinuarExtendido.disabled = false;
+        if (btnToggleAuditoria) btnToggleAuditoria.textContent = "Ver auditoría";
+        if (avisoAuditoriaDetalle) avisoAuditoriaDetalle.classList.add("oculto");
+
+        const ahora = new Date();
+        const finEst = new Date(ahora.getTime() + AVISO_MS);
+        if (avisoHoraInicio) avisoHoraInicio.textContent = _fmtHora(ahora);
+        if (avisoHoraFinEst) avisoHoraFinEst.textContent = _fmtHora(finEst);
+        if (avisoHoraFinReal) avisoHoraFinReal.textContent = "--:--:--";
+
+        avisoModal.classList.remove("oculto");
+
+        avisoInterval = setInterval(() => {
+            restante -= 1;
+            if (avisoCountdown) avisoCountdown.textContent = String(Math.max(0, restante));
+            if (restante <= 0) {
+                if (btnContinuarExtendido) btnContinuarExtendido.disabled = true;
+                if (avisoMsg) avisoMsg.textContent = "Tiempo agotado (30s). Cerrando automáticamente…";
+                if (avisoHoraFinReal) avisoHoraFinReal.textContent = _fmtHora(new Date());
+                clearInterval(avisoInterval);
+                avisoInterval = null;
+            }
+        }, 1000);
+
+        avisoTimeout = setTimeout(() => {
+            _autocerrarActual();
+        }, AVISO_MS);
+    }
+
+    function _cerrarAviso() {
+        if (avisoTimeout) {
+            clearTimeout(avisoTimeout);
+            avisoTimeout = null;
+        }
+        if (avisoInterval) {
+            clearInterval(avisoInterval);
+            avisoInterval = null;
+        }
+        if (avisoModal) avisoModal.classList.add("oculto");
+        if (avisoHoraInicio) avisoHoraInicio.textContent = "--:--:--";
+        if (avisoHoraFinEst) avisoHoraFinEst.textContent = "--:--:--";
+        if (avisoHoraFinReal) avisoHoraFinReal.textContent = "--:--:--";
+        if (btnToggleAuditoria) btnToggleAuditoria.textContent = "Ver auditoría";
+        if (avisoAuditoriaDetalle) avisoAuditoriaDetalle.classList.add("oculto");
+        avisoActivo = null;
+        _tryMostrarAviso();
+    }
+
+    async function _continuarHorarioExtendido() {
+        if (!avisoActivo) return;
+        const id = avisoActivo.dataset.id || null;
+        if (!id) {
+            _cerrarAviso();
+            return;
+        }
+
+        try {
+            const resp = await fetch("{{ url_for('usuario.extender_horario_tarea') }}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: id })
+            });
+            const data = await resp.json();
+
+            if (!resp.ok || !data.ok) {
+                mostrarAlerta(data.msg || "⚠️ No se pudo extender el horario.");
+            } else {
+                avisoActivo.dataset.extendido = "1";
+                if (avisoHoraFinReal) avisoHoraFinReal.textContent = `Extendido ${_fmtHora(new Date())}`;
+                mostrarAlerta("✅ Horario extendido activado.");
+            }
+        } catch (e) {
+            mostrarAlerta("⚠️ Error al extender horario.");
+        } finally {
+            _cerrarAviso();
+        }
+    }
+
+    async function _autocerrarActual() {
+        if (!avisoActivo) return;
+        if ((avisoActivo.dataset.extendido || "0") === "1") {
+            _cerrarAviso();
+            return;
+        }
+        if (!document.body.contains(avisoActivo)) {
+            _cerrarAviso();
+            return;
+        }
+
+        const fila = avisoActivo;
+        const id = fila.dataset.id || null;
+        if (!id) {
+            _cerrarAviso();
+            return;
+        }
+
+        try {
+            const resp = await fetch("{{ url_for('usuario.autocerrar_tarea_usuario') }}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: id, force_test: (DEBUG_AVISO_SEG > 0 ? 1 : 0) })
+            });
+            const data = await resp.json();
+
+            if (!resp.ok || !data.ok) {
+                mostrarAlerta(data.msg || "⚠️ No se pudo autocerrar la tarea.");
+            } else {
+                mostrarAlerta("⏱️ Tiempo agotado (30s). Tarea finalizada automáticamente.");
+                fila.style.transition = "opacity 0.4s";
+                fila.style.opacity = "0";
+                setTimeout(() => fila.remove(), 400);
+            }
+        } catch (e) {
+            mostrarAlerta("⚠️ Error al autocerrar.");
+        } finally {
+            _cerrarAviso();
+        }
+    }
+
+    function _programarAvisoFila(fila) {
+        if (!fila) return;
+        if ((fila.dataset.extendido || "0") === "1") return;
+        if ((fila.dataset.estado || "").trim() !== "En curso") return;
+
+        const inicio = _parseFechaHora(fila.dataset.inicio || "");
+        if (!inicio) return;
+
+        const turno = _inferirTurno(inicio);
+        const ahora = new Date();
+        const msHasta = _msHastaLimite(inicio, ahora, turno);
+
+        if (msHasta === null) return;
+        if (msHasta <= 0) {
+            _encolarAviso(fila);
+        } else {
+            setTimeout(() => _encolarAviso(fila), msHasta);
+        }
+    }
+
+    // ===== OP ⇄ DESCRIPCIÓN (BIDIRECCIONAL) =====
+    (function () {
+        const opSelect = document.getElementById("op-select");
+        const descSelect = document.getElementById("desc-select");
+        if (!opSelect || !descSelect) return;
+
+        let syncing = false;
+        const PRE = "{{ (op_preseleccionada or '')|e }}".trim();
+
+        function opToDesc(opValue) {
+            const opt = opSelect.querySelector(`option[value="${CSS.escape(opValue)}"]`);
+            return opt && opt.dataset && opt.dataset.desc ? opt.dataset.desc : "";
+        }
+
+        function descToOp(descValue) {
+            const opt = Array.from(descSelect.options).find(o => o.value === descValue);
+            return opt && opt.dataset && opt.dataset.op ? opt.dataset.op : "";
+        }
+
+        function syncFromOP() {
+            if (syncing) return;
+            syncing = true;
+
+            const op = opSelect.value || "";
+            const desc = op ? (opToDesc(op) || "") : "";
+            descSelect.value = (desc && Array.from(descSelect.options).some(o => o.value === desc)) ? desc : "";
+
+            syncing = false;
+        }
+
+        function syncFromDESC() {
+            if (syncing) return;
+            syncing = true;
+
+            const desc = descSelect.value || "";
+            const op = desc ? (descToOp(desc) || "") : "";
+            opSelect.value = (op && Array.from(opSelect.options).some(o => o.value === op)) ? op : "";
+
+            syncing = false;
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            if (PRE) opSelect.value = PRE;
+            if (opSelect.value) syncFromOP();
+        });
+
+        opSelect.addEventListener("change", syncFromOP);
+        descSelect.addEventListener("change", syncFromDESC);
+    })();
+
+    // ===== CONFIRMAR INICIO (OP sin impresión / impresión activa) =====
+    (function () {
+        const form = document.getElementById("form-tarea");
+        if (!form) return;
+
+        const opSel = document.getElementById("op-select");
+        const tareaSel = document.getElementById("tareaSelect");
+        const force = document.getElementById("force_continue");
+
+        form.addEventListener("submit", async (ev) => {
+            if (force && force.value === "1") return;
+
+            const op_no = (opSel && opSel.value || "").trim();
+            const proceso = (tareaSel && tareaSel.value || "").trim();
+            if (!op_no || !proceso) return;
+
+            ev.preventDefault();
+
+            try {
+                const qs = new URLSearchParams({ op_no, proceso });
+                const resp = await fetch("{{ url_for('usuario.validar_inicio') }}?" + qs.toString(), { method: "GET" });
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    mostrarAlerta(data.msg || "⚠️ No se puede iniciar.");
+                    return;
+                }
+
+                if (data.needs_confirm) {
+                    const ok = confirm(data.msg || "¿Deseas continuar?");
+                    if (!ok) return;
+                    if (force) force.value = "1";
+                }
+
+                form.submit();
+            } catch (e) {
+                mostrarAlerta("⚠️ Error validando inicio.");
+            }
+        });
+    })();
+
+    // ===== FINALIZAR / PAUSAR / REANUDAR / CHECKLIST =====
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // ✅ Refrescar botones Pausa/Reanudar al cargar (según data-estado)
+        document.querySelectorAll('#tbodyTareas tr').forEach(fila => {
+            _refrescarBotonesPausaFila(fila);
+
+            const estado = (fila.getAttribute("data-estado") || "").trim();
+            const checklistOk = (fila.dataset.checklistOk || "0").trim() === "1";
+            const omiteControles = (fila.dataset.omiteControles || "0").trim() === "1";
+            const cantidadInput = fila.querySelector('.cantidad-input');
+            const btnFinalizar = fila.querySelector('.btn-finalizar');
+            const btnChecklist = fila.querySelector('.btn-checklist');
+
+            if ((checklistOk || omiteControles) && btnChecklist) {
+                btnChecklist.classList.add("disabled");
+                btnChecklist.dataset.locked = "1";
+                btnChecklist.setAttribute("aria-disabled", "true");
+                btnChecklist.setAttribute("tabindex", "-1");
+            }
+
+            if (omiteControles && estado !== "Pausada") {
+                if (cantidadInput) cantidadInput.disabled = true;
+                if (btnFinalizar) btnFinalizar.disabled = false;
+            } else if (checklistOk && estado !== "Pausada") {
+                if (cantidadInput) cantidadInput.disabled = false;
+                if (btnFinalizar) btnFinalizar.disabled = false;
+            }
+
+            if (estado === "Pausada") {
+                if (cantidadInput) cantidadInput.disabled = true;
+                if (btnFinalizar) btnFinalizar.disabled = true;
+            }
+
+            // ✅ Programar aviso por límite de 8 horas
+            _programarAvisoFila(fila);
+        });
+
+        document.querySelectorAll('.btn-finalizar').forEach(btn => {
+            btn.addEventListener('click', () => finalizarTarea(btn));
+        });
+
+        document.querySelectorAll('.btn-pausa').forEach(btn => {
+            btn.addEventListener('click', () => pausarTarea(btn));
+        });
+
+        document.querySelectorAll('.btn-reanudar').forEach(btn => {
+            btn.addEventListener('click', () => reanudarTarea(btn));
+        });
+
+        if (btnContinuarExtendido) {
+            btnContinuarExtendido.addEventListener('click', _continuarHorarioExtendido);
+        }
+
+        if (btnToggleAuditoria && avisoAuditoriaDetalle) {
+            btnToggleAuditoria.addEventListener('click', () => {
+                const visible = !avisoAuditoriaDetalle.classList.contains("oculto");
+                if (visible) {
+                    avisoAuditoriaDetalle.classList.add("oculto");
+                    btnToggleAuditoria.textContent = "Ver auditoría";
+                } else {
+                    avisoAuditoriaDetalle.classList.remove("oculto");
+                    btnToggleAuditoria.textContent = "Ocultar auditoría";
+                }
+            });
+        }
+
+        // ✅ Checklist: guardar por ID y redirigir con ?id=&op_no=&proceso=
+        document.querySelectorAll('.btn-checklist').forEach(a => {
+            a.addEventListener('click', function (ev) {
+                const fila = this.closest('tr');
+                const omiteControles = fila ? (fila.dataset.omiteControles || "0").trim() === "1" : false;
+                if (omiteControles) {
+                    ev.preventDefault();
+                    mostrarAlerta("ℹ️ Esta tarea no requiere checklist.");
+                    return;
+                }
+
+                const bloqueado = (this.dataset.locked || "0").trim() === "1" || this.classList.contains("disabled");
+                if (bloqueado) {
+                    ev.preventDefault();
+                    mostrarAlerta("✅ Checklist ya realizado. Finaliza la tarea para continuar.");
+                    return;
+                }
+
+                const id = fila ? (fila.dataset.id || "").trim() : "";
+                const op = fila ? (fila.dataset.op || "").trim() : "";
+                const proceso = fila ? (fila.dataset.tarea || "").trim() : "";
+
+                if (!op || !proceso) return;
+
+                if (id) sessionStorage.setItem('checklist_id', id);
+                sessionStorage.setItem('opChecklist', op);
+                sessionStorage.setItem('tareaChecklist', proceso);
+
+                ev.preventDefault();
+                const baseUrl = this.getAttribute("href");
+                const qs = new URLSearchParams({ id: id, op_no: op, proceso: proceso });
+
+                const procesoNorm = (proceso || "")
+                    .toUpperCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "");
+                if (procesoNorm.includes("PEGUE")) {
+                    qs.set("modulo", "pegue");
+                }
+                if (procesoNorm.includes("REVISION")) {
+                    qs.set("modulo", "encuadernacion");
+                }
+
+                window.location.href = baseUrl + "?" + qs.toString();
+            });
+        });
+
+        // ✅ Al volver del checklist: ubicar fila por ID
+        const backId = (sessionStorage.getItem('checklist_id') || "").trim();
+        const backOp = sessionStorage.getItem('opChecklist');
+        const backProc = sessionStorage.getItem('tareaChecklist');
+
+        if (backId || (backOp && backProc)) {
+            let fila = null;
+
+            if (backId) {
+                fila = document.querySelector(`tr[data-id="${CSS.escape(backId)}"]`);
+            }
+            if (!fila && backOp && backProc) {
+                fila = document.querySelector(`tr[data-op="${CSS.escape(backOp)}"][data-tarea="${CSS.escape(backProc)}"]`);
+            }
+
+            if (fila) {
+                const estado = (fila.getAttribute("data-estado") || "").trim();
+                const omiteControles = (fila.dataset.omiteControles || "0").trim() === "1";
+                if (estado !== "Pausada") {
+                    const cantidadInput = fila.querySelector('.cantidad-input');
+                    const btnFinalizar = fila.querySelector('.btn-finalizar');
+                    if (cantidadInput) cantidadInput.disabled = omiteControles;
+                    if (btnFinalizar) btnFinalizar.disabled = false;
+                }
+                _refrescarBotonesPausaFila(fila);
+            }
+
+            sessionStorage.removeItem('checklist_id');
+            sessionStorage.removeItem('opChecklist');
+            sessionStorage.removeItem('tareaChecklist');
+        }
+    });
+
+    function _refrescarBotonesPausaFila(fila) {
+        const estado = (fila.getAttribute("data-estado") || "").trim();
+        const btnPausa = fila.querySelector('.btn-pausa');
+        const btnReanudar = fila.querySelector('.btn-reanudar');
+
+        if (estado === "Pausada") {
+            if (btnPausa) btnPausa.style.display = "none";
+            if (btnReanudar) btnReanudar.style.display = "inline-block";
+        } else {
+            if (btnPausa) btnPausa.style.display = "inline-block";
+            if (btnReanudar) btnReanudar.style.display = "none";
+        }
+    }
+
+    async function finalizarTarea(boton) {
+        const fila = boton.closest('tr');
+        const estado = (fila.getAttribute("data-estado") || "").trim();
+        if (estado === "Pausada") {
+            mostrarAlerta("⏸️ La tarea está en PAUSA. Reanúdala para finalizar.");
+            return;
+        }
+
+        const id = fila.dataset.id || null;
+        const op = fila.dataset.op || '';
+        const tarea = fila.dataset.tarea || '';
+        const descripcion = fila.dataset.descripcion || '';
+        const omiteControles = (fila.dataset.omiteControles || "0").trim() === "1";
+
+        const celdas = fila.cells;
+        const inicioCelda = celdas[4];
+        const finCelda = celdas[5];
+
+        const cantidadInput = fila.querySelector('.cantidad-input');
+        const usuario = "{{ session['usuario'] or 'Usuario' }}";
+
+        const cantidad = (cantidadInput.value || '').trim();
+        if (!omiteControles && (!cantidad || parseInt(cantidad) <= 0)) {
+            mostrarAlerta(`${usuario}, debes ingresar una cantidad para dar por terminada la tarea.`);
+            cantidadInput.focus();
+            return;
+        }
+        const cantidadEnviar = omiteControles ? "0" : cantidad;
+
+        // ✅ enviamos RAW al backend (no HH:MM)
+        const inicioRaw = (fila.dataset.inicio || "").trim();
+        const finRaw = (fila.dataset.fin || "").trim();
+
+        try {
+            const resp = await fetch("{{ url_for('usuario.finalizar_tarea_usuario') }}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: id,
+                    op_no: op,
+                    descripcion: descripcion,
+                    tarea: tarea,
+                    cantidad: cantidadEnviar,
+                    inicio: inicioRaw || inicioCelda.textContent,
+                    fin: finRaw || finCelda.textContent
+                })
+            });
+
+            const data = await resp.json();
+
+            if (!resp.ok || !data.ok) {
+                mostrarAlerta(data.msg || "⚠️ Error al guardar en la base de datos.");
+                return;
+            }
+
+            // ✅ UI: mostrar solo HH:MM al final
+            const ahora = new Date();
+            const hh = String(ahora.getHours()).padStart(2, '0');
+            const mm = String(ahora.getMinutes()).padStart(2, '0');
+            finCelda.textContent = `${hh}:${mm}`;
+
+            const tt = (data && data.tiempo_total) ? ` Tiempo total: ${data.tiempo_total}` : "";
+            const he = (data && data.horas_extras) ? ` Horas extras: ${data.horas_extras}` : "";
+            mostrarAlerta(`✅ ${tarea} finalizada.${tt}${he}`);
+
+            fila.style.transition = "opacity 0.4s";
+            fila.style.opacity = "0";
+            setTimeout(() => fila.remove(), 400);
+        } catch (e) {
+            mostrarAlerta(e.message || "⚠️ Error al guardar en la base de datos.");
+        }
+    }
+
+    async function pausarTarea(boton) {
+        const fila = boton.closest('tr');
+        const estado = (fila.getAttribute("data-estado") || "").trim();
+        if (estado === "Pausada") {
+            mostrarAlerta("⏸️ La tarea ya está en PAUSA.");
+            return;
+        }
+
+        const id = fila.dataset.id || null;
+        if (!id) {
+            mostrarAlerta("⚠️ No se encontró el ID de la tarea.");
+            return;
+        }
+
+        try {
+            const resp = await fetch("{{ url_for('usuario.pausar_tarea_usuario') }}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: id })
+            });
+
+            const data = await resp.json();
+
+            if (!resp.ok || !data.ok) {
+                mostrarAlerta(data.msg || "⚠️ No se pudo pausar la tarea.");
+                return;
+            }
+
+            fila.setAttribute("data-estado", "Pausada");
+
+            const cantidadInput = fila.querySelector('.cantidad-input');
+            const btnFinalizar = fila.querySelector('.btn-finalizar');
+
+            if (cantidadInput) cantidadInput.disabled = true;
+            if (btnFinalizar) btnFinalizar.disabled = true;
+
+            _refrescarBotonesPausaFila(fila);
+            mostrarAlerta("⏸️ Tarea en PAUSA.");
+        } catch (e) {
+            mostrarAlerta(e.message || "⚠️ Error al pausar.");
+        }
+    }
+
+    async function reanudarTarea(boton) {
+        const fila = boton.closest('tr');
+        const estado = (fila.getAttribute("data-estado") || "").trim();
+        if (estado !== "Pausada") {
+            mostrarAlerta("ℹ️ La tarea no está en pausa.");
+            return;
+        }
+
+        const id = fila.dataset.id || null;
+        if (!id) {
+            mostrarAlerta("⚠️ No se encontró el ID de la tarea.");
+            return;
+        }
+
+        try {
+            const resp = await fetch("{{ url_for('usuario.reanudar_tarea_usuario') }}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: id })
+            });
+
+            const data = await resp.json();
+
+            if (!resp.ok || !data.ok) {
+                mostrarAlerta(data.msg || "⚠️ No se pudo reanudar la tarea.");
+                return;
+            }
+
+            fila.setAttribute("data-estado", "En curso");
+            _programarAvisoFila(fila);
+
+            const cantidadInput = fila.querySelector('.cantidad-input');
+            const btnFinalizar = fila.querySelector('.btn-finalizar');
+            const omiteControles = (fila.dataset.omiteControles || "0").trim() === "1";
+
+            if (cantidadInput) cantidadInput.disabled = omiteControles;
+            if (btnFinalizar) btnFinalizar.disabled = false;
+
+            _refrescarBotonesPausaFila(fila);
+            mostrarAlerta("▶️ Tarea reanudada.");
+        } catch (e) {
+            mostrarAlerta(e.message || "⚠️ Error al reanudar.");
+        }
+    }
+</script>
+
+{% endblock %}

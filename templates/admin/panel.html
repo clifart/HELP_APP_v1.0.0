@@ -1,0 +1,755 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="helpapp-admin-frame">
+  <div class="helpapp-admin-grid">
+
+    <!-- IZQUIERDA: CONTENIDO -->
+    <main class="helpapp-admin-main">
+
+      <!-- BANNER / ENCABEZADO + ESTADÃSTICAS (TU BLOQUE ORIGINAL) -->
+      <section class="ha-card ha-card--hero">
+        <div class="ha-card__body">
+
+          <!-- ðŸ”¹ ENCABEZADO -->
+          <div class="panel-header">
+            <h2>Panel de Administracion</h2>
+            <p class="saludo-usuario">
+              Bienvenido(a), <strong>{{ session['usuario'] or 'Admin' }}</strong>. Gestiona usuarios y tareas.
+            </p>
+          </div>
+
+          <!-- ðŸ”¹ ESTADÃSTICAS -->
+          <div class="stats">
+            <div class="stat-box">
+              <div>Usuarios</div>
+              <h3>{{ total_usuarios }}</h3>
+            </div>
+            <div class="stat-box">
+              <div>Admins</div>
+              <h3>{{ total_admins }}</h3>
+            </div>
+            <div class="stat-box">
+              <div>Tareas activas</div>
+              <h3>{{ total_tareas }}</h3>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ======================================================= -->
+      <!-- ðŸ‘¥ GESTIÃ“N DE USUARIOS -->
+      <!-- ======================================================= -->
+      <section class="ha-card section ha-section-users">
+        <header class="ha-card__header">Gestion de Usuarios</header>
+        <div class="ha-card__body">
+
+          <!-- Form con botÃ³n a la derecha -->
+          <form action="{{ url_for('admin.agregar_usuario') }}" method="POST" autocomplete="off" class="form-accion">
+            <div class="grupo-inputs">
+              <input type="text" name="nombre" placeholder="Nombre" required>
+              <input type="text" name="celular" placeholder="Celular">
+              <select name="rol">
+                <option value="usuario">Usuario</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+
+            <div class="grupo-boton">
+              <button type="submit" class="btn btn-success">Agregar</button>
+            </div>
+          </form>
+
+          <!-- ðŸ”¹ LISTA DESPLEGABLE DE USUARIOS -->
+          {% if usuarios and usuarios|length > 0 %}
+          <div class="usuarios-dropdown">
+            <label for="usuario_select" class="usuarios-dropdown__label">Usuario</label>
+            <div class="usuarios-dropdown__row">
+              <div class="usuarios-dropdown__control">
+                <select id="usuario_select" class="form-select">
+                  {% for u in usuarios %}
+                  <option value="{{ u.id }}" data-nombre="{{ u.nombre }}" data-celular="{{ u.celular or '-' }}"
+                    data-rol="{{ u.rol }}" data-allow-delete="{{ 1 if u.rol != 'admin' else 0 }}"
+                    data-delete-url="{{ url_for('admin.eliminar_usuario', id=u.id) }}">
+                    {{ u.nombre }}{% if u.celular %} - {{ u.celular }}{% endif %} ({{ u.rol }})
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="usuarios-dropdown__action">
+                <form id="usuario_delete_form" method="POST"
+                  action="{{ url_for('admin.eliminar_usuario', id=usuarios[0].id) }}">
+                  <button id="usuario_delete_btn" type="submit" class="btn btn-rojo">Eliminar</button>
+                </form>
+              </div>
+            </div>
+
+            <div class="usuarios-dropdown__meta">
+              <div><strong>ID:</strong> <span id="usuario_meta_id">-</span></div>
+              <div><strong>Nombre:</strong> <span id="usuario_meta_nombre">-</span></div>
+              <div><strong>Celular:</strong> <span id="usuario_meta_celular">-</span></div>
+              <div><strong>Rol:</strong> <span id="usuario_meta_rol">-</span></div>
+            </div>
+          </div>
+          {% else %}
+          <div class="text-muted">No hay usuarios registrados.</div>
+          {% endif %}
+
+        </div>
+      </section>
+
+      <!-- ======================================================= -->
+      <!-- ðŸ—‚ï¸ GESTIÃ“N DE Ã“RDENES DE PRODUCCIÃ“N -->
+      <!-- ======================================================= -->
+      <section class="ha-card section ha-section-ops">
+        <header class="ha-card__header">Gestion de Ordenes de Produccion</header>
+        <div class="ha-card__body">
+
+          <!-- Form OP con botÃ³n a la derecha -->
+          <form method="POST" action="{{ url_for('admin.agregar_tarea') }}" autocomplete="off" class="form-accion mb-4">
+            <div class="grupo-inputs">
+
+              <!-- âœ… OP No. SOLO NÃšMEROS -->
+              <input type="text" name="titulo" placeholder="OP No. (Ej: 09101)" required inputmode="numeric"
+                pattern="[0-9]+" maxlength="15" autocomplete="off"
+                oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+
+              <input type="text" name="descripcion" placeholder="Ej: Cajas..." required>
+            </div>
+
+            <div class="grupo-boton">
+              <button type="submit" class="btn btn-success">Agregar tarea</button>
+            </div>
+          </form>
+
+          <!-- ðŸ”¹ LISTA DESPLEGABLE DE OPs -->
+          {% if tareas and tareas|length > 0 %}
+          <div class="op-dropdown">
+            <label for="op_select" class="op-dropdown__label">OP</label>
+            <div class="op-dropdown__row">
+              <div class="op-dropdown__control">
+                <select id="op_select" class="form-select">
+                  {% for t in tareas %}
+                  <option value="{{ t.id }}" data-op="{{ t.titulo }}" data-desc="{{ t.descripcion }}"
+                    data-has-tasks="{{ 1 if t.tiene_tareas|default(0) else 0 }}"
+                    data-action-url="{{ url_for('admin.finalizar_tarea', id=t.id) }}">
+                    {{ t.titulo }} - {{ t.descripcion }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="op-dropdown__action">
+                {% set tiene_tareas_first = tareas[0].tiene_tareas|default(0) %}
+                <form id="op_action_form" method="POST"
+                  action="{{ url_for('admin.finalizar_tarea', id=tareas[0].id) }}">
+                  <button type="submit" id="op_action_btn" class="btn btn-success btn-sm btn-producto-terminado"
+                    data-tiene-tareas="{{ 1 if tiene_tareas_first else 0 }}">
+                    {% if tiene_tareas_first == 1 %}
+                    Producto terminado
+                    {% else %}
+                    Cancelar
+                    {% endif %}
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <div class="op-dropdown__meta">
+              <div><strong>ID:</strong> <span id="op_meta_id">-</span></div>
+              <div><strong>OP No.:</strong> <span id="op_meta_op">-</span></div>
+              <div><strong>Descripcion:</strong> <span id="op_meta_desc">-</span></div>
+            </div>
+          </div>
+          {% else %}
+          <div class="alert alert-info text-center mt-3">
+            No hay OPs activas en este momento.
+          </div>
+          {% endif %}
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- DERECHA: BOTONES -->
+    <aside class="helpapp-admin-aside">
+
+      <div class="ha-btnbox ha-btnbox--bots">
+        <div class="ha-btnbox__header">BOTONES</div>
+        <div class="ha-btnbox__body">
+          <a href="{{ url_for('admin.historial') }}" class="btn btn-success">Historial</a>
+
+          <a class="btn btn-outline-success" href="{{ url_for('admin.carpeta_diaria') }}">Tareas diarias</a>
+          <a class="btn btn-outline-success" href="{{ url_for('admin.historial_diario') }}">Historial (hoy)</a>
+
+        </div>
+      </div>
+
+      <div class="ha-btnbox ha-btnbox--tech">
+        <div class="ha-btnbox__header">SESION / TECNICO</div>
+        <div class="ha-btnbox__body">
+
+          <a href="{{ url_for('login') }}" class="btn btn-rojo">Cerrar Sesion</a>
+
+          <form action="{{ url_for('admin.modo_tecnico') }}" method="POST" autocomplete="off" novalidate>
+            <input type="text" name="fakeuser" style="display:none">
+            <input type="password" name="fakepass" style="display:none">
+
+            <input type="password" id="input_clave_tecnica" name="fake_tecnica" placeholder="Clave tecnica"
+              style="padding:4px;" required autocomplete="new-password" autocorrect="off" autocapitalize="none"
+              spellcheck="false" oninput="document.getElementById('real_clave_tecnica').value=this.value">
+
+            <input type="hidden" id="real_clave_tecnica" name="clave_tecnica" value="">
+            <button type="submit" class="btn btn-dark btn-sm">Modo Tecnico</button>
+          </form>
+
+        </div>
+      </div>
+
+    </aside>
+
+  </div>
+</div>
+
+
+<!-- ðŸ”” TOAST BONITO: OP SIN TAREAS INICIADAS -->
+<div id="toast-op-sin-tareas" class="toast-op-oculto">
+  <div class="toast-op-contenido">
+    <div class="toast-op-icono">âš ï¸</div>
+    <div class="toast-op-mensaje">
+      <strong>AtenciÃ³n</strong><br>
+      Esta OP no tiene ninguna tarea iniciada,<br>
+      por lo que <strong>NO se enviarÃ¡ al historial</strong>.
+      <br><br>
+      Â¿Desea continuar?
+      <div class="toast-op-acciones">
+        <button type="button" id="toast-op-cancelar" class="btn btn-sm btn-outline-dark">Cancelar</button>
+        <button type="button" id="toast-op-aceptar" class="btn btn-sm btn-success">Continuar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* =========================================================
+     LAYOUT CONTENEDOR ADMIN (marco verde + columna botones)
+     ========================================================= */
+  .helpapp-admin-frame {
+    max-width: 1150px;
+    margin: 18px auto;
+    padding: 14px;
+    border: 4px solid #1f8f5f;
+    border-radius: 18px;
+    background: #fff;
+  }
+
+  .helpapp-admin-grid {
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    grid-template-areas:
+      "hero hero"
+      "users bots"
+      "ops tech";
+    gap: 1px;
+    align-items: start;
+  }
+
+  .ha-card {
+    border: 3px solid #111;
+    border-radius: 16px;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .ha-card__header {
+    padding: 8px 12px;
+    text-align: center;
+    font-weight: 700;
+    border-bottom: 2px solid #111;
+    background: #f7f7f7;
+  }
+
+  .ha-card__body {
+    padding: 12px;
+  }
+
+  .ha-card--hero .ha-card__body {
+    padding: 14px 12px;
+  }
+
+  /* Evitar el margen global de .section para alinear con la columna derecha */
+  .helpapp-admin-frame .section {
+    margin-top: 0;
+  }
+
+  .helpapp-admin-main {
+    display: contents;
+  }
+
+  .helpapp-admin-aside {
+    display: contents;
+  }
+
+  .ha-card--hero {
+    grid-area: hero;
+  }
+
+  .ha-section-users {
+    grid-area: users;
+  }
+
+  .ha-section-ops {
+    grid-area: ops;
+  }
+
+  .ha-btnbox--bots {
+    grid-area: bots;
+  }
+
+  .ha-btnbox--tech {
+    grid-area: tech;
+  }
+
+  .ha-btnbox {
+    border: 3px solid #111;
+    border-radius: 16px;
+    background: #fff;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .ha-btnbox__header {
+    padding: 8px 12px;
+    text-align: center;
+    font-weight: 800;
+    border-bottom: 2px solid #111;
+    background: #f7f7f7;
+  }
+
+  .ha-btnbox__body {
+    padding: 10px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .ha-btnbox__body .btn {
+    width: 85%;
+    max-width: 190px;
+    justify-content: center;
+    justify-self: center;
+  }
+
+  @media (max-width: 992px) {
+    .helpapp-admin-grid {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "hero"
+        "users"
+        "bots"
+        "ops"
+        "tech";
+    }
+  }
+
+  /* =========================================================
+     TUS ESTILOS EXISTENTES (SIN CAMBIAR FUNCIONALIDAD)
+     ========================================================= */
+
+  /* âœ… Formularios: inputs a la izquierda, botÃ³n a la derecha */
+  .form-accion {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    width: 100%;
+    margin: 0 0 12px 0;
+  }
+
+  .form-accion .grupo-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .form-accion .grupo-boton {
+    margin-left: auto;
+  }
+
+  /* ðŸ”¹ Contenedores de tablas responsivas */
+  .tabla-usuarios-wrapper,
+  .tabla-op-wrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .tabla-usuarios-wrapper table,
+  .tabla-op-wrapper table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .usuarios-dropdown,
+  .op-dropdown {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 10px;
+    background: #fbfffb;
+    --dropdown-control-height: 38px;
+  }
+
+  .usuarios-dropdown__row,
+  .op-dropdown__row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .usuarios-dropdown__control,
+  .op-dropdown__control {
+    flex: 1;
+    min-width: 460px;
+  }
+
+  .usuarios-dropdown__control .form-select,
+  .op-dropdown__control .form-select {
+    width: 100%;
+    max-width: none;
+    height: var(--dropdown-control-height);
+  }
+
+  .usuarios-dropdown__action .btn,
+  .op-dropdown__action .btn {
+    height: var(--dropdown-control-height);
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .usuarios-dropdown__action form,
+  .op-dropdown__action form {
+    margin: 0;
+  }
+
+  .usuarios-dropdown__label,
+  .op-dropdown__label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .usuarios-dropdown__action,
+  .op-dropdown__action {
+    margin-left: auto;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .usuarios-dropdown__meta,
+  .op-dropdown__meta {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 6px 12px;
+    font-size: 0.9rem;
+    color: #333;
+  }
+
+  /* ðŸ”” Toast flotante */
+  .toast-op-oculto {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 3000;
+    display: none;
+  }
+
+  .toast-op-oculto.activo {
+    display: block;
+  }
+
+  .toast-op-contenido {
+    background-color: #ffc107;
+    color: #212529;
+    padding: 10px 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: 360px;
+    font-size: 14px;
+  }
+
+  .toast-op-icono {
+    font-size: 18px;
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  .toast-op-mensaje {
+    flex: 1;
+  }
+
+  .toast-op-acciones {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  /* ðŸ“± MÃ³vil */
+  @media (max-width: 576px) {
+    .form-accion {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .form-accion .grupo-inputs {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .form-accion .grupo-boton {
+      margin-left: 0;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .tabla-usuarios-wrapper table th,
+    .tabla-usuarios-wrapper table td,
+    .tabla-op-wrapper table th,
+    .tabla-op-wrapper table td {
+      padding: 4px;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+    .usuarios-dropdown__row,
+    .op-dropdown__row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .usuarios-dropdown__action,
+    .op-dropdown__action {
+      margin-left: 0;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .toast-op-oculto {
+      top: 10px;
+      right: auto;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .toast-op-contenido {
+      max-width: 90vw;
+    }
+  }
+
+  /* AcciÃ³n (Ãºltima columna) a la derecha */
+  .tabla-usuarios-wrapper table th:last-child,
+  .tabla-usuarios-wrapper table td:last-child,
+  .tabla-op-wrapper table th:last-child,
+  .tabla-op-wrapper table td:last-child {
+    text-align: right !important;
+    vertical-align: middle;
+  }
+
+  .tabla-usuarios-wrapper table td:last-child form,
+  .tabla-op-wrapper table td:last-child form {
+    width: 100%;
+    display: flex !important;
+    justify-content: flex-end !important;
+    margin: 0 !important;
+  }
+
+  .tabla-usuarios-wrapper table td:last-child .btn,
+  .tabla-op-wrapper table td:last-child .btn {
+    margin-left: auto !important;
+  }
+
+  /* Separar botones en la columna AcciÃ³n */
+  .tabla-usuarios-wrapper table td:last-child,
+  .tabla-op-wrapper table td:last-child {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+
+  /* Si hay mÃ¡s de un botÃ³n en la misma celda, que no se peguen */
+  .tabla-usuarios-wrapper table td:last-child .btn,
+  .tabla-op-wrapper table td:last-child .btn {
+    margin: 6px 0 !important;
+    display: inline-block;
+  }
+</style>
+
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    // Desvanecer alertas de Flask
+    const alerts = document.querySelectorAll('.alert');
+    if (alerts.length) {
+      setTimeout(() => {
+        alerts.forEach(el => {
+          el.style.transition = 'opacity 0.6s ease';
+          el.style.opacity = '0';
+          setTimeout(() => el.remove(), 600);
+        });
+      }, 4000);
+    }
+
+    // Toast OP sin tareas iniciadas
+    const toast = document.getElementById('toast-op-sin-tareas');
+    const btnCancelar = document.getElementById('toast-op-cancelar');
+    const btnAceptar = document.getElementById('toast-op-aceptar');
+    let formPendiente = null;
+
+    const mostrarToast = (form) => { formPendiente = form; toast.classList.add('activo'); };
+    const ocultarToast = () => { toast.classList.remove('activo'); formPendiente = null; };
+
+    if (btnCancelar) btnCancelar.addEventListener('click', ocultarToast);
+
+    if (btnAceptar) {
+      btnAceptar.addEventListener('click', () => {
+        if (formPendiente) formPendiente.submit();
+        ocultarToast();
+      });
+    }
+
+    const botonesProducto = document.querySelectorAll('.btn-producto-terminado');
+    botonesProducto.forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        const tieneTareas = this.dataset.tieneTareas === "1";
+        if (!tieneTareas) {
+          e.preventDefault();
+          mostrarToast(this.closest('form'));
+        }
+      });
+    });
+
+    const sincronizarAlturasPaneles = () => {
+      const users = document.querySelector('.ha-section-users');
+      const ops = document.querySelector('.ha-section-ops');
+      const bots = document.querySelector('.ha-btnbox--bots');
+      const tech = document.querySelector('.ha-btnbox--tech');
+      if (!users || !ops || !bots || !tech) return;
+
+      if (window.matchMedia('(max-width: 992px)').matches) {
+        bots.style.height = '';
+        tech.style.height = '';
+        return;
+      }
+
+      bots.style.height = `${Math.round(users.getBoundingClientRect().height)}px`;
+      tech.style.height = `${Math.round(ops.getBoundingClientRect().height)}px`;
+    };
+
+    const usuarioSelect = document.getElementById('usuario_select');
+    const usuarioDeleteForm = document.getElementById('usuario_delete_form');
+    const usuarioDeleteBtn = document.getElementById('usuario_delete_btn');
+    const metaId = document.getElementById('usuario_meta_id');
+    const metaNombre = document.getElementById('usuario_meta_nombre');
+    const metaCelular = document.getElementById('usuario_meta_celular');
+    const metaRol = document.getElementById('usuario_meta_rol');
+
+    const actualizarUsuario = () => {
+      if (!usuarioSelect) return;
+      const option = usuarioSelect.options[usuarioSelect.selectedIndex];
+      if (!option) return;
+
+      const nombre = option.dataset.nombre || option.textContent.trim();
+      const celular = option.dataset.celular || '-';
+      const rol = option.dataset.rol || '-';
+      const allowDelete = option.dataset.allowDelete !== '0';
+      const deleteUrl = option.dataset.deleteUrl || '';
+
+      if (metaId) metaId.textContent = option.value || '-';
+      if (metaNombre) metaNombre.textContent = nombre || '-';
+      if (metaCelular) metaCelular.textContent = celular;
+      if (metaRol) metaRol.textContent = rol;
+
+      if (usuarioDeleteForm && deleteUrl) {
+        usuarioDeleteForm.action = deleteUrl;
+      }
+
+      if (usuarioDeleteBtn) {
+        usuarioDeleteBtn.disabled = !allowDelete;
+        usuarioDeleteBtn.textContent = allowDelete ? 'Eliminar' : 'No disponible';
+        usuarioDeleteBtn.classList.toggle('btn-rojo', allowDelete);
+        usuarioDeleteBtn.classList.toggle('btn-secondary', !allowDelete);
+      }
+
+      if (usuarioDeleteForm) {
+        usuarioDeleteForm.dataset.confirmNombre = nombre || '';
+      }
+    };
+
+    if (usuarioSelect) {
+      usuarioSelect.addEventListener('change', actualizarUsuario);
+      actualizarUsuario();
+    }
+
+    if (usuarioDeleteForm) {
+      usuarioDeleteForm.addEventListener('submit', (e) => {
+        if (usuarioDeleteBtn && usuarioDeleteBtn.disabled) {
+          e.preventDefault();
+          return;
+        }
+        const nombre = usuarioDeleteForm.dataset.confirmNombre || '';
+        if (nombre && !confirm(`Eliminar usuario ${nombre}?`)) {
+          e.preventDefault();
+        }
+      });
+    }
+
+    const opSelect = document.getElementById('op_select');
+    const opActionForm = document.getElementById('op_action_form');
+    const opActionBtn = document.getElementById('op_action_btn');
+    const opMetaId = document.getElementById('op_meta_id');
+    const opMetaOp = document.getElementById('op_meta_op');
+    const opMetaDesc = document.getElementById('op_meta_desc');
+
+    const actualizarOP = () => {
+      if (!opSelect) return;
+      const option = opSelect.options[opSelect.selectedIndex];
+      if (!option) return;
+
+      const opNo = option.dataset.op || '-';
+      const desc = option.dataset.desc || '-';
+      const hasTasks = option.dataset.hasTasks === '1';
+      const actionUrl = option.dataset.actionUrl || '';
+
+      if (opMetaId) opMetaId.textContent = option.value || '-';
+      if (opMetaOp) opMetaOp.textContent = opNo;
+      if (opMetaDesc) opMetaDesc.textContent = desc;
+
+      if (opActionForm && actionUrl) {
+        opActionForm.action = actionUrl;
+      }
+
+      if (opActionBtn) {
+        opActionBtn.dataset.tieneTareas = hasTasks ? '1' : '0';
+        opActionBtn.textContent = hasTasks ? 'Producto terminado' : 'Cancelar';
+      }
+    };
+
+    if (opSelect) {
+      opSelect.addEventListener('change', actualizarOP);
+      actualizarOP();
+    }
+
+    sincronizarAlturasPaneles();
+    setTimeout(sincronizarAlturasPaneles, 150);
+    window.addEventListener('resize', () => {
+      window.requestAnimationFrame(sincronizarAlturasPaneles);
+    });
+  });
+</script>
+
+{% endblock %}

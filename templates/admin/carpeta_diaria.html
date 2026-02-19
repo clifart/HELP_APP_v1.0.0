@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% set lite = request.args.get('lite') == '1' %}
+
+
+<style>
+    .hx-list{display:flex;flex-direction:column;gap:10px;}
+    .hx-item{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:12px 14px;border-radius:14px;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.18);
+      text-decoration:none;color:#0b1b12;font-weight:800;
+    }
+    .hx-item:hover{background:rgba(255,255,255,.18)}
+    .hx-left{display:flex;align-items:center;gap:10px;}
+    .hx-arrow{opacity:.8;font-weight:900}
+
+    /* Estilo local tipo HELP_APP (no rompe el global) */
+    .hx-wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 18px 16px 22px;
+    }
+
+    .hx-card {
+        background: rgba(255, 255, 255, .10);
+        border: 1px solid rgba(255, 255, 255, .18);
+        border-radius: 16px;
+        box-shadow: 0 10px 26px rgba(0, 0, 0, .10);
+        overflow: hidden
+    }
+
+    .hx-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 16px;
+        background: linear-gradient(180deg, rgba(0, 0, 0, .10), rgba(255, 255, 255, .06));
+    }
+
+    .hx-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        font-size: 20px;
+    }
+
+    .hx-sub {
+        opacity: .85;
+        font-size: 13px;
+        margin-top: 2px
+    }
+
+    .hx-path {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+        background: rgba(0, 0, 0, .20);
+        padding: 6px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, .18)
+    }
+
+    .hx-body {
+        padding: 14px 16px 16px;
+    }
+
+    .hx-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 10px 0 14px;
+    }
+
+    .hx-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, .18);
+        background: rgba(0, 0, 0, .16);
+        color: #fff;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 14px
+    }
+
+    .hx-btn:hover {
+        background: rgba(0, 0, 0, .24)
+    }
+
+    .hx-btn.primary {
+        background: rgba(255, 255, 255, .14)
+    }
+
+    .hx-btn.primary:hover {
+        background: rgba(255, 255, 255, .20)
+    }
+
+    .hx-btn.ok {
+        background: rgba(0, 0, 0, .16)
+    }
+
+    .hx-btn.ok:hover {
+        background: rgba(0, 0, 0, .24)
+    }
+
+    .hx-list {
+        background: rgba(255, 255, 255, .10);
+        border: 1px solid rgba(255, 255, 255, .18);
+        border-radius: 14px;
+        overflow: hidden
+    }
+
+    .hx-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, .10)
+    }
+
+    .hx-item:last-child {
+        border-bottom: none
+    }
+
+    .hx-file {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700
+    }
+
+    .hx-file small {
+        opacity: .8;
+        font-weight: 600
+    }
+
+    .hx-download {
+        white-space: nowrap
+    }
+
+    .hx-empty {
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, .14);
+        border: 1px solid rgba(255, 255, 255, .18);
+        color: #0b1b12
+    }
+
+    .hx-empty b {
+        color: #0b1b12
+    }
+
+    .hx-btn.back{
+      background: rgba(255, 193, 7, .22);          /* ámbar */
+      border-color: rgba(255, 193, 7, .40);
+      color: #083b22;
+    }
+    .hx-btn.back:hover{
+      background: rgba(255, 193, 7, .30);
+    }
+
+</style>
+
+<div class="hx-wrap">
+    <div class="hx-card">
+        <div class="hx-head">
+            <div>
+                <div class="hx-title">📁 Carpeta diaria (web)</div>
+                <div class="hx-sub">Acceso rápido a archivos del día (servidor) y descargas.</div>
+            </div>
+            <div class="hx-path" title="Ruta en el servidor">{{ carpeta }}</div>
+        </div>
+
+        <div class="hx-body">
+            {% if not lite %}
+                <div class="hx-actions">
+                  <a class="hx-btn back" href="{{ url_for('admin.panel') }}">⬅ Panel</a>
+
+                  <!-- ✅ NUEVO: volver al listado de fechas (para no perderse) -->
+                  <a class="hx-btn primary" href="{{ url_for('admin.tareas_diarias') }}">📅 Ver otras fechas</a>
+
+                  <a class="hx-btn primary" href="{{ url_for('admin.historial_diario') }}">📋 Ver historial (hoy)</a>
+                  <a class="hx-btn ok" href="{{ url_for('admin.descargar_historial_diario_csv') }}">⬇ CSV (hoy)</a>
+                  <a class="hx-btn ok" href="{{ url_for('admin.descargar_historial_diario_xlsx') }}">⬇ Excel (hoy)</a>
+                </div>
+            {% endif %}
+
+            {% if not archivos %}
+            <div class="hx-empty">
+                <b>No hay archivos todavía</b> (crea una tarea y aparecerán).
+            </div>
+            {% else %}
+            <div class="hx-list">
+                {% for a in archivos %}
+                <div class="hx-item">
+                    <div class="hx-file">📄 {{ a }}</div>
+                    <div class="hx-download">
+                        <a class="hx-btn"
+                            href="{{ url_for('admin.carpeta_diaria_descargar', fecha=fecha or '', nombre=a) }}">⬇
+                            Descargar</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

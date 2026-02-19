@@ -1,0 +1,113 @@
+<form id="checklist-impresion" method="post" action="/impresion/checklist">
+    <h3>IMPRESIÓN (MÁQUINAS SORMZ - GTO - SORM - DIGITAL - ETIQUETAS)</h3>
+
+    <!-- 1. Se entrega paquete (Punto 1) -->
+    <div class="check-item">
+        <span class="check-label">1. Se entrega paquete (Punto 1)</span>
+        <label><input type="radio" name="p1_entrega_paquete" value="SI" required> Sí</label>
+        <label><input type="radio" name="p1_entrega_paquete" value="NO"> No</label>
+        <label><input type="radio" name="p1_entrega_paquete" value="NA"> N/A</label>
+    </div>
+
+    <!-- 2. Verificar planchas, OP de las planchas Vs OP sherpa APROBADA -->
+    <div class="check-item">
+        <span class="check-label">
+            2. Verificar planchas, OP de las planchas Vs OP sherpa APROBADA
+        </span>
+        <label><input type="radio" name="p2_verificar_planchas" value="SI" required> Sí</label>
+        <label><input type="radio" name="p2_verificar_planchas" value="NO"> No</label>
+        <label><input type="radio" name="p2_verificar_planchas" value="NA"> N/A</label>
+    </div>
+
+    <!-- 3. Alistamiento corte de papel -->
+    <div class="check-item">
+        <span class="check-label">3. Alistamiento corte de papel</span>
+        <label><input type="radio" name="p3_alistamiento_corte_papel" value="SI" required> Sí</label>
+        <label><input type="radio" name="p3_alistamiento_corte_papel" value="NO"> No</label>
+        <label><input type="radio" name="p3_alistamiento_corte_papel" value="NA"> N/A</label>
+    </div>
+
+    <!-- 4. Control en proceso cada 50 tiros -->
+    <div class="check-item">
+        <span class="check-label">4. Control en proceso cada 50 tiros</span>
+        <label><input type="radio" name="p4_control_50_tiros" value="SI" required> Sí</label>
+        <label><input type="radio" name="p4_control_50_tiros" value="NO"> No</label>
+        <label><input type="radio" name="p4_control_50_tiros" value="NA"> N/A</label>
+    </div>
+
+    <!-- 4.1. Tonos están dentro de la carta de color -->
+    <div class="check-item sub-item">
+        <span class="check-label">4.1. Tonos están dentro de la carta de color</span>
+        <label><input type="radio" name="p41_tonos_carta_color" value="SI" required> Sí</label>
+        <label><input type="radio" name="p41_tonos_carta_color" value="NO"> No</label>
+        <label><input type="radio" name="p41_tonos_carta_color" value="NA"> N/A</label>
+    </div>
+
+    <!-- 4.2. Tonos de acuerdo a la última muestra APROBADA -->
+    <div class="check-item sub-item">
+        <span class="check-label">4.2. Tonos de acuerdo a la última muestra APROBADA</span>
+        <label><input type="radio" name="p42_tonos_muestra_aprobada" value="SI" required> Sí</label>
+        <label><input type="radio" name="p42_tonos_muestra_aprobada" value="NO"> No</label>
+        <label><input type="radio" name="p42_tonos_muestra_aprobada" value="NA"> N/A</label>
+    </div>
+
+    <button type="submit" class="btn-guardar-checklist">Guardar checklist</button>
+</form>
+
+<style>
+    #checklist-impresion {
+        border: 1px solid #ccc;
+        padding: 15px;
+        border-radius: 8px;
+        background: #f9f9f9;
+        margin-top: 15px;
+    }
+
+    #checklist-impresion h3 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        font-size: 18px;
+        color: #0f6a4f;
+    }
+
+    .check-item {
+        margin-bottom: 10px;
+        padding: 6px 8px;
+        border-bottom: 1px dashed #ddd;
+    }
+
+    .check-item:last-child {
+        border-bottom: none;
+    }
+
+    .check-item.sub-item {
+        margin-left: 20px;
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .check-label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+
+    .check-item label {
+        margin-right: 10px;
+        font-weight: normal;
+    }
+
+    .btn-guardar-checklist {
+        margin-top: 12px;
+        background-color: #0f6a4f;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 14px;
+        cursor: pointer;
+    }
+
+    .btn-guardar-checklist:hover {
+        opacity: 0.9;
+    }
+</style>

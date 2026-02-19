@@ -1,0 +1,745 @@
+{# templates/usuario/checklist_impresion.html #}
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="max-width: 700px; margin-top: 25px;">
+
+    <form id="checklist-impresion" method="post" action="">
+        <input type="hidden" name="id" value="{{ tarea_id or '' }}">
+        <input type="hidden" name="op_no" value="{{ op_no or '' }}">
+        <input type="hidden" name="modulo" id="modulo-hidden" value="{{ (modulo_activo or 'impresion')|lower }}">
+
+        <div class="checklist-wrap">
+
+            <div class="checklist-title">
+                <h3 id="tituloChecklist" style="margin:0; text-align:center; color:#0f6a4f; font-weight:800;">
+                    CHECKLIST: {{ (modulo_activo or 'IMPRESION')|upper }}
+                </h3>
+            </div>
+
+            <table class="checklist-table">
+                <thead>
+                    <tr>
+                        <th class="col-num"></th>
+                        <th class="col-desc">DESCRIPCIÓN</th>
+                        <th class="col-opt">SI</th>
+                        <th class="col-opt">NO</th>
+                        <th class="col-opt">N/A</th>
+                    </tr>
+                </thead>
+
+                <!-- ===================================================== -->
+                <!-- I. PAQUETE -->
+                <!-- ===================================================== -->
+                <tbody class="module" data-module="paquete">
+                    <tr class="section-row">
+                        <td class="col-num">I</td>
+                        <td class="col-desc section-title">PAQUETE</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+                    {% set paq_items = [
+                    ("1", "Aprobación de la Dirección de Calidad", "paq_aprob_dir_cal"),
+                    ("1.1", "Sherpa (muestra de inserto plegado)", "paq_sherpa_inserto"),
+                    ("1.2", "Carta de Colores", "paq_carta_colores"),
+                    ("1.3", "Última muestra de impresión aprobada", "paq_ultima_muestra_imp"),
+                    ("2", "Producto Nuevo o con cambios", "paq_prod_nuevo_cambios"),
+                    ("2.1", "Sherpa", "paq_sherpa"),
+                    ("2.2", "Dummy", "paq_dummy"),
+                    ("3", "Generar Orden de Producción (OP)", "paq_generar_op"),
+                    ("4", "Entregar copia de la OP a Bodega para descargue del papel en el inventario",
+                    "paq_entregar_copia_bodega"),
+                    ("4.1", "Verificar descargue del papel en el sistema", "paq_verificar_descargue")
+                    ] %}
+
+                    {% for n, desc, key in paq_items %}
+                    <tr>
+                        <td class="col-num">{{ n }}</td>
+                        <td class="col-desc">{{ desc }}</td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NA"></td>
+                    </tr>
+                    {% endfor %}
+
+                    <tr class="footer-row">
+                        <td colspan="3" class="footer-cell">
+                            <span class="footer-label">RESPONSABLE:</span>
+                            <input type="text" name="responsable_paq" class="footer-input responsable-field" value="" readonly>
+                        </td>
+                        <td colspan="2" class="footer-cell footer-date">
+                            <span class="footer-label">FECHA:</span>
+                            <input type="date" name="fecha_paq" class="footer-input date-field">
+                        </td>
+                    </tr>
+                    <tr class="footer-row">
+                        <td colspan="5" class="footer-cell">
+                            <span class="footer-label">OBSERVACIONES:</span>
+                            <textarea name="observaciones_paq" rows="2" class="footer-textarea"></textarea>
+                        </td>
+                    </tr>
+
+                    <tr class="spacer-row"><td colspan="5"></td></tr>
+                </tbody>
+
+                <!-- ===================================================== -->
+                <!-- II. IMPRESIÓN -->
+                <!-- ===================================================== -->
+                <tbody class="module" data-module="impresion">
+                    <tr class="section-row">
+                        <td class="col-num">II</td>
+                        <td class="col-desc section-title">IMPRESIÓN (MÁQUINAS SORMZ, SORM, GTO46, FLEXO, DIGITAL...)</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">1</td>
+                        <td class="col-desc">Se entrega paquete (Punto I)</td>
+                        <td class="col-opt"><input type="radio" name="p1_entrega_paquete" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="p1_entrega_paquete" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="p1_entrega_paquete" value="NA"></td>
+                    </tr>
+                    <tr>
+                        <td class="col-num">2</td>
+                        <td class="col-desc">Verificar planchas, OP de las planchas Vs. OP Sherpa APROBADA</td>
+                        <td class="col-opt"><input type="radio" name="p2_verificar_planchas" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="p2_verificar_planchas" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="p2_verificar_planchas" value="NA"></td>
+                    </tr>
+                    <tr>
+                        <td class="col-num">3</td>
+                        <td class="col-desc">Alistamiento Corte del papel</td>
+                        <td class="col-opt"><input type="radio" name="p3_alistamiento_corte_papel" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="p3_alistamiento_corte_papel" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="p3_alistamiento_corte_papel" value="NA"></td>
+                    </tr>
+
+                    <tr class="section-row">
+                        <td class="col-num">4</td>
+                        <td class="col-desc section-title">Control en proceso cada 50 tiros</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">4.1</td>
+                        <td class="col-desc">Tonos están dentro de cartas de colores</td>
+                        <td class="col-opt"><input type="radio" name="p41_tonos_carta_color" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="p41_tonos_carta_color" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="p41_tonos_carta_color" value="NA"></td>
+                    </tr>
+                    <tr>
+                        <td class="col-num">4.2</td>
+                        <td class="col-desc">Tonos de acuerdo a la última muestra aprobada</td>
+                        <td class="col-opt"><input type="radio" name="p42_tonos_muestra_aprobada" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="p42_tonos_muestra_aprobada" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="p42_tonos_muestra_aprobada" value="NA"></td>
+                    </tr>
+
+                    <tr class="footer-row">
+                        <td colspan="3" class="footer-cell">
+                            <span class="footer-label">RESPONSABLE:</span>
+                            <input
+                              type="text"
+                              name="responsable_imp"
+                              class="footer-input responsable-field"
+                              value="{{ usuario }}"
+                            >
+
+                        </td>
+                        <td colspan="2" class="footer-cell footer-date">
+                            <span class="footer-label">FECHA:</span>
+                            <input type="date" name="fecha_imp" class="footer-input date-field">
+                        </td>
+                    </tr>
+                    <tr class="footer-row">
+                        <td colspan="5" class="footer-cell">
+                            <span class="footer-label">OBSERVACIONES:</span>
+                            <textarea name="observaciones_imp" rows="2" class="footer-textarea"></textarea>
+                        </td>
+                    </tr>
+
+                    <tr class="spacer-row"><td colspan="5"></td></tr>
+                </tbody>
+
+                <!-- ===================================================== -->
+                <!-- III. PLASTIFICADO -->
+                <!-- ===================================================== -->
+                <tbody class="module" data-module="plastificado">
+                    <tr class="section-row">
+                        <td class="col-num">III</td>
+                        <td class="col-desc section-title">PLASTIFICADO AL CALOR CON ACABADO CORONA</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">1</td>
+                        <td class="col-desc">Se entrega paquete (Punto I)</td>
+                        <td class="col-opt"><input type="radio" name="plas_entrega_paquete" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="plas_entrega_paquete" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="plas_entrega_paquete" value="NA"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">2</td>
+                        <td class="col-desc">Tamaño de rollo y Peso</td>
+                        <td class="col-opt"><input type="text" name="plas_alto" placeholder="Alto" class="mini-input"></td>
+                        <td class="col-opt"><input type="text" name="plas_ancho" placeholder="Ancho" class="mini-input"></td>
+                        <td class="col-opt"><input type="radio" name="plas_peso" placeholder="Peso" value="NA"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">3</td>
+                        <td class="col-desc">Verificación calidad del plástico marcador de DINAS</td>
+                        <td class="col-opt"><input type="radio" name="plas_calidad_dinas" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="plas_calidad_dinas" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="plas_calidad_dinas" value="NA"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">4</td>
+                        <td class="col-desc">Muestra cada 50 tiros (Verificar calidad de plastificado)</td>
+                        <td class="col-opt"><input type="radio" name="plas_muestra_50" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="plas_muestra_50" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="plas_muestra_50" value="NA"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">4.1</td>
+                        <td class="col-desc">Presenta burbujas</td>
+                        <td class="col-opt"><input type="radio" name="plas_burbujas" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="plas_burbujas" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="plas_burbujas" value="NA"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">4.2</td>
+                        <td class="col-desc">Se levanta el plastificado</td>
+                        <td class="col-opt"><input type="radio" name="plas_levanta" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="plas_levanta" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="plas_levanta" value="NA"></td>
+                    </tr>
+
+                    <tr class="footer-row">
+                        <td colspan="3" class="footer-cell">
+                            <span class="footer-label">RESPONSABLE:</span>
+                            <input type="text" name="responsable_plas" class="footer-input responsable-field" value="" readonly>
+                        </td>
+                        <td colspan="2" class="footer-cell footer-date">
+                            <span class="footer-label">FECHA:</span>
+                            <input type="date" name="fecha_plas" class="footer-input date-field">
+                        </td>
+                    </tr>
+                    <tr class="footer-row">
+                        <td colspan="5" class="footer-cell">
+                            <span class="footer-label">OBSERVACIONES:</span>
+                            <textarea name="observaciones_plas" rows="2" class="footer-textarea"></textarea>
+                        </td>
+                    </tr>
+
+                    <tr class="spacer-row"><td colspan="5"></td></tr>
+                </tbody>
+
+                <!-- ===================================================== -->
+                <!-- IV. BRILLO -->
+                <!-- ===================================================== -->
+                <tbody class="module" data-module="brillo">
+                    <tr class="section-row">
+                        <td class="col-num">IV</td>
+                        <td class="col-desc section-title">BRILLO</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+                    {% set brillo_items = [
+                    ("1", "Se entrega paquete (Punto I)", "brillo_entrega_paquete"),
+                    ("2", "Verificar Reserva para codificado tamaño de espacio", "brillo_reserva_codificado"),
+                    ("3", "Control en proceso cada 50 tiros", "brillo_control_50")
+                    ] %}
+
+                    {% for n, desc, key in brillo_items %}
+                    <tr>
+                        <td class="col-num">{{ n }}</td>
+                        <td class="col-desc">{{ desc }}</td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NA"></td>
+                    </tr>
+                    {% endfor %}
+
+                    <tr class="footer-row">
+                        <td colspan="3" class="footer-cell">
+                            <span class="footer-label">RESPONSABLE:</span>
+                            <input type="text" name="responsable_brillo" class="footer-input responsable-field" value="" readonly>
+                        </td>
+                        <td colspan="2" class="footer-cell footer-date">
+                            <span class="footer-label">FECHA:</span>
+                            <input type="date" name="fecha_brillo" class="footer-input date-field">
+                        </td>
+                    </tr>
+                    <tr class="footer-row">
+                        <td colspan="5" class="footer-cell">
+                            <span class="footer-label">OBSERVACIONES:</span>
+                            <textarea name="observaciones_brillo" rows="2" class="footer-textarea"></textarea>
+                        </td>
+                    </tr>
+
+                    <tr class="spacer-row"><td colspan="5"></td></tr>
+                </tbody>
+
+                <!-- ===================================================== -->
+                <!-- V. PLEGADO -->
+                <!-- ===================================================== -->
+                <tbody class="module" data-module="plegado">
+                    <tr class="section-row">
+                        <td class="col-num">V</td>
+                        <td class="col-desc section-title">PLEGADO</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+                    {% set pleg_items = [
+                    ("1", "Se entrega paquete (Punto I)", "pleg_entrega_paquete"),
+                    ("2", "Verificar Muestra (inserto plegado)", "pleg_verificar_muestra"),
+                    ("3", "Verificar en ficha técnica pliegue de insertos Demac impresos (alimentar ficha técnica)",
+                    "pleg_ficha_tecnica"),
+                    ("4", "Se entrega muestra actualizada de inserto plegado", "pleg_muestra_actualizada")
+                    ] %}
+
+                    {% for n, desc, key in pleg_items %}
+                    <tr>
+                        <td class="col-num">{{ n }}</td>
+                        <td class="col-desc">{{ desc }}</td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NA"></td>
+                    </tr>
+                    {% endfor %}
+
+                    <tr class="footer-row">
+                        <td colspan="3" class="footer-cell">
+                            <span class="footer-label">RESPONSABLE:</span>
+                            <input type="text" name="responsable_pleg" class="footer-input responsable-field" value="" readonly>
+                        </td>
+                        <td colspan="2" class="footer-cell footer-date">
+                            <span class="footer-label">FECHA:</span>
+                            <input type="date" name="fecha_pleg" class="footer-input date-field">
+                        </td>
+                    </tr>
+                    <tr class="footer-row">
+                        <td colspan="5" class="footer-cell">
+                            <span class="footer-label">OBSERVACIONES:</span>
+                            <textarea name="observaciones_pleg" rows="2" class="footer-textarea"></textarea>
+                        </td>
+                    </tr>
+                </tbody>
+
+                <!-- ===================================================== -->
+                <!-- VI. TROQUELADO Y REFILADO -->
+                <!-- ===================================================== -->
+                <tbody class="module" data-module="troquelado_refilado">
+                    <tr class="section-row">
+                        <td class="col-num">VI</td>
+                        <td class="col-desc section-title">TROQUELADO Y REFILADO</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+                    {% set troq_items = [
+                    ("1", "Se entrega paquete (Punto I)", "troq_entrega_paquete"),
+                    ("2", "Verificación de la calidad de Troquel y de Refilado", "troq_verif_calidad"),
+                    ("2.1", "Estado de los Cortes", "troq_estado_cortes"),
+                    ("2.2", "Estado de Refilado", "troq_estado_refilado"),
+                    ("2.3", "Estado Material", "troq_estado_material"),
+                    ("2.4", "Estado Troquelado", "troq_estado_troquelado"),
+                    ("3", "Control en proceso (CADA 50 TIROS - CANTIDADES HASTA 1000) (CADA 100 TIROS - CANTIDADES)",
+                    "troq_control_proceso"),
+                    ("3.1", "Corte del rasgo", "troq_corte_rasgo"),
+                    ("3.2", "Posición de pegues por cantidad", "troq_posicion_pegues"),
+                    ("3.3", "Posición de cartucheras de material impreso (papel)", "troq_posicion_cartucheras"),
+                    ("3.4", "Otro", "troq_otro")
+                    ] %}
+
+                    {% for n, desc, key in troq_items %}
+                    <tr>
+                        <td class="col-num">{{ n }}</td>
+                        <td class="col-desc">{{ desc }}</td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NA"></td>
+                    </tr>
+                    {% endfor %}
+
+                    <tr class="footer-row">
+                        <td colspan="3" class="footer-cell">
+                            <span class="footer-label">RESPONSABLE:</span>
+                            <input type="text" name="responsable_troq" class="footer-input responsable-field" value="" readonly>
+                        </td>
+                        <td colspan="2" class="footer-cell footer-date">
+                            <span class="footer-label">FECHA:</span>
+                            <input type="date" name="fecha_troq" class="footer-input date-field">
+                        </td>
+                    </tr>
+                    <tr class="footer-row">
+                        <td colspan="5" class="footer-cell">
+                            <span class="footer-label">OBSERVACIONES:</span>
+                            <textarea name="observaciones_troq" rows="2" class="footer-textarea"></textarea>
+                        </td>
+                    </tr>
+
+                    <tr class="spacer-row"><td colspan="5"></td></tr>
+                </tbody>
+
+                <!-- ===================================================== -->
+                <!-- VII. ENCUADERNACIÓN -->
+                <!-- ===================================================== -->
+                <tbody class="module" data-module="encuadernacion">
+                    <tr class="section-row">
+                        <td class="col-num">VII</td>
+                        <td class="col-desc section-title">ENCUADERNACIÓN</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+                    {% set enc_items = [
+                    ("1", "Se entrega paquete (Punto I)", "enc_entrega_paquete"),
+                    ("1.1", "Orden de Producción", "enc_op"),
+                    ("2", "Revisar producto", "enc_revisar_producto"),
+                    ("2.1", "Color (Dentro de carta de color)", "enc_color_carta"),
+                    ("2.2", "Plastificado", "enc_plastificado"),
+                    ("2.3", "Brillo", "enc_brillo"),
+                    ("3", "Papelería", "enc_papeleria"),
+                    ("3.1", "Etiquetas", "enc_etiquetas"),
+                    ("3.2", "Cartucheras", "enc_cartucheras"),
+                    ("3.4", "Cartas de Colores (Producto Nuevo o con cambios)", "enc_cartas_colores"),
+                    ("3.5", "Plastificado", "enc_plastificado_papeleria"),
+                    ("4", "Empaque", "enc_empaque"),
+                    ("4.1", "Cortado", "enc_cortado"),
+                    ("4.2", "Pegado", "enc_pegado")
+                    ] %}
+
+                    {% for n, desc, key in enc_items %}
+                    <tr>
+                        <td class="col-num">{{ n }}</td>
+                        <td class="col-desc">{{ desc }}</td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NA"></td>
+                    </tr>
+                    {% endfor %}
+
+                    <tr class="footer-row">
+                        <td colspan="3" class="footer-cell">
+                            <span class="footer-label">RESPONSABLE:</span>
+                            <input type="text" name="responsable_enc" class="footer-input responsable-field" value="" readonly>
+                        </td>
+                        <td colspan="2" class="footer-cell footer-date">
+                            <span class="footer-label">FECHA:</span>
+                            <input type="date" name="fecha_enc" class="footer-input date-field">
+                        </td>
+                    </tr>
+                    <tr class="footer-row">
+                        <td colspan="5" class="footer-cell">
+                            <span class="footer-label">OBSERVACIONES:</span>
+                            <textarea name="observaciones_enc" rows="2" class="footer-textarea"></textarea>
+                        </td>
+                    </tr>
+
+                    <tr class="spacer-row"><td colspan="5"></td></tr>
+                </tbody>
+
+                <!-- ===================================================== -->
+                <!-- VIII. ENTREGA Y CIERRE -->
+                <!-- ===================================================== -->
+                <tbody class="module" data-module="entrega_cierre">
+                    <tr class="section-row">
+                        <td class="col-num">VIII</td>
+                        <td class="col-desc section-title">ENTREGA Y CIERRE DE ORDEN DE PRODUCCIÓN</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+                    {% set ec_items = [
+                    ("1", "Se entrega paquete (Punto I)", "ec_entrega_paquete"),
+                    ("2", "Verificar", "ec_verificar"),
+                    ("2.1", "No. Orden de compra", "ec_oc"),
+                    ("2.2", "Código", "ec_codigo"),
+                    ("2.3", "Descripción", "ec_descripcion"),
+                    ("2.4", "Reporte de tiempos y seguimiento OP", "ec_reporte_tiempos"),
+                    ("2.5", "Verificar Proceso Estándar Vs. Proceso Real", "ec_proceso_estandar_vs_real"),
+                    ("2.6", "Verificar proceso OP Vs. Proceso Estándar", "ec_proceso_op_vs_estandar"),
+                    ("2.7", "Cerrar OP", "ec_cerrar_op"),
+                    ("2.8", "Adjuntar papeles completos punto I", "ec_adjuntar_papeles"),
+                    ("3", "Solicitar certificación previa a transporte si aplica", "ec_certificacion_transporte"),
+                    ("4", "Solicitar transporte", "ec_solicitar_transporte"),
+                    ("5", "Verificar que el material llegó a los destinos", "ec_verificar_llego")
+                    ] %}
+
+                    {% for n, desc, key in ec_items %}
+                    <tr>
+                        <td class="col-num">{{ n }}</td>
+                        <td class="col-desc">{{ desc }}</td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NA"></td>
+                    </tr>
+                    {% endfor %}
+
+                    <tr class="footer-row">
+                        <td colspan="3" class="footer-cell">
+                            <span class="footer-label">RESPONSABLE:</span>
+                            <input type="text" name="responsable_ec" class="footer-input responsable-field" value="" readonly>
+                        </td>
+                        <td colspan="2" class="footer-cell footer-date">
+                            <span class="footer-label">FECHA:</span>
+                            <input type="date" name="fecha_ec" class="footer-input date-field">
+                        </td>
+                    </tr>
+                    <tr class="footer-row">
+                        <td colspan="5" class="footer-cell">
+                            <span class="footer-label">OBSERVACIONES:</span>
+                            <textarea name="observaciones_ec" rows="2" class="footer-textarea"></textarea>
+                        </td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+            <!-- ✅ AQUÍ VA lo del círculo rojo (abajo, dentro del recuadro) -->
+            <div class="meta-bottom">
+                <div><span class="lbl">OP:</span> <strong>{{ op_no or 'SIN OP' }}</strong></div>
+            </div>
+
+            <div class="checklist-actions">
+                <button type="submit" class="btn-guardar-checklist">Guardar checklist</button>
+            </div>
+        </div>
+    </form>
+
+    <style>
+        #checklist-impresion { margin-top: 15px; }
+
+        .checklist-wrap{
+            background:#fff;
+            border:2px solid #2f2f2f;
+            padding:8px;
+            border-radius:6px;
+        }
+
+        .checklist-table{
+            width:100%;
+            border-collapse:collapse;
+            table-layout:fixed;
+            font-size:13px;
+        }
+
+        .checklist-table th,
+        .checklist-table td{
+            border:1px solid #3b3b3b;
+            padding:4px 6px;
+            vertical-align:middle;
+        }
+
+        .checklist-table thead th{
+            text-align:center;
+            font-weight:700;
+            background:#f2f2f2;
+            color:#000 !important;
+            opacity:1 !important;
+            visibility:visible !important;
+        }
+
+        .col-num{ width:7%; text-align:center; }
+        .col-desc{ width:68%; }
+        .col-opt{ width:8.3%; text-align:center; }
+
+        .section-row td{ font-weight:700; }
+        .section-title{ text-transform:uppercase; }
+        .opt-head{ background:#f2f2f2; }
+
+        .footer-row td{ background:#fafafa; font-weight:700; }
+        .footer-cell{ padding:8px 6px; }
+        .footer-label{ display:inline-block; margin-right:8px; }
+
+        .footer-input{
+            width:70%;
+            max-width:320px;
+            border:none;
+            border-bottom:1px solid #3b3b3b;
+            outline:none;
+            padding:2px 4px;
+            background:transparent;
+            font-weight:400;
+        }
+
+        .footer-textarea{
+            width:100%;
+            border:1px solid #3b3b3b;
+            padding:6px;
+            font-weight:400;
+            resize:vertical;
+        }
+
+        .checklist-actions{ margin-top:10px; text-align:right; }
+
+        .btn-guardar-checklist{
+            background-color:#0f6a4f;
+            color:#fff;
+            border:none;
+            border-radius:6px;
+            padding:6px 14px;
+            cursor:pointer;
+        }
+        .btn-guardar-checklist:hover{ opacity:.9; }
+
+        /* Separador visual */
+        .spacer-row td{
+            height:12px;
+            border:none !important;
+            background:transparent !important;
+            padding:0 !important;
+        }
+
+        /* Mini inputs (Plastificado) */
+        .mini-input{
+            width:100%;
+            max-width:100%;
+            font-size:12px;
+            padding:2px 4px;
+            border:1px solid #3b3b3b;
+            box-sizing:border-box;
+        }
+
+        /* FIX radios */
+        .checklist-table td.col-opt{
+            position:relative;
+            overflow:hidden !important;
+            padding:0 !important;
+            text-align:center;
+        }
+        .checklist-table td.col-opt input[type="radio"]{
+            position:relative !important;
+            left:0 !important;
+            right:0 !important;
+            margin:0 auto !important;
+            display:inline-block !important;
+            width:auto !important;
+            max-width:16px !important;
+            min-width:0 !important;
+        }
+
+        /* ✅ Ensanchar fecha (hasta donde flechas) */
+        .footer-date .date-field{
+            width:96% !important;
+            max-width:none !important;
+        }
+
+        /* ✅ Usuario/OP abajo (donde pediste) */
+        .meta-bottom{
+            margin-top:8px;
+            display:flex;
+            gap:16px;
+            align-items:center;
+            justify-content:flex-start;
+            font-size:13px;
+        }
+        .meta-bottom .lbl{ font-weight:700; }
+
+        /* ✅ módulos ocultos completamente */
+        tbody.module.is-hidden{
+            display:none !important;
+        }
+    </style>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('checklist-impresion');
+        const opHidden = document.querySelector('input[name="op_no"]');
+        const moduloHidden = document.getElementById('modulo-hidden');
+    
+        const params = new URLSearchParams(window.location.search);
+        const tareaQS = (params.get('tarea') || params.get('proceso') || "").trim();
+        const modQS = (params.get('modulo') || "").toLowerCase().trim();
+    
+        // ✅ usuario (para RESPONSABLE)
+        const USUARIO = "{{ (usuario or '')|e }}".trim();
+    
+        function norm(s) {
+          return (s || "")
+            .toUpperCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .trim();
+        }
+    
+        function moduloPorTarea(tarea) {
+          const t = norm(tarea);
+          if (t.includes("PAQUET")) return "paquete";
+          if (t.includes("PLEG")) return "plegado";
+          if (t.includes("BRILL") || t.includes("BARNIZ")) return "brillo";
+          if (t.includes("PLAST")) return "plastificado";
+          if (t.includes("IMPRES")) return "impresion";
+          if (t.includes("TROQUEL") || t.includes("REFIL")) return "troquelado_refilado";
+          if (t.includes("REVISION")) return "encuadernacion";
+          if (t.includes("ENCUADER")) return "encuadernacion";
+          return "";
+        }
+    
+        // ✅ Prioridad: modulo por URL -> modulo por tarea -> hidden -> default
+        let activo = (modQS || moduloPorTarea(tareaQS) || (moduloHidden?.value || "") || "impresion")
+          .toLowerCase()
+          .trim();
+    
+        if (moduloHidden) moduloHidden.value = activo;
+    
+        // ✅ Mostrar SOLO el módulo activo y deshabilitar el resto
+        document.querySelectorAll('tbody.module').forEach(tb => {
+          const modulo = (tb.dataset.module || "").toLowerCase().trim();
+          const isActive = (modulo === activo);
+    
+          tb.classList.toggle('is-hidden', !isActive);
+    
+          tb.querySelectorAll('input, select, textarea').forEach(el => {
+            if (!isActive) {
+              el.disabled = true;
+              el.required = false;
+            } else {
+              el.disabled = false;
+            }
+          });
+    
+          // ✅ AUTORELLENO RESPONSABLE (solo en módulo activo)
+          if (isActive) {
+            tb.querySelectorAll('.responsable-field').forEach(inp => {
+              if (!inp.value && USUARIO) inp.value = USUARIO;
+            });
+          }
+        });
+    
+        // Guardar para volver al panel
+        if (opHidden && opHidden.value) sessionStorage.setItem('opChecklist', opHidden.value);
+        if (tareaQS) sessionStorage.setItem('tareaChecklist', tareaQS);
+    
+        if (form) {
+          form.addEventListener('submit', function () {
+            const op2 = document.querySelector('input[name="op_no"]');
+            if (op2 && op2.value) sessionStorage.setItem('opChecklist', op2.value);
+          });
+        }
+      });
+    </script>
+
+
+</div>
+{% endblock %}

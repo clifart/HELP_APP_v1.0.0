@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .historial-box {
+    margin-top: 18px;
+  }
+
+  .historial-actions {
+    margin-bottom: 10px;
+  }
+
+  .tabla-wrap {
+    overflow-x: auto;
+  }
+
+  .tabla-historial {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0;
+    background: #fff;
+  }
+
+  .tabla-historial th {
+    background-color: #0f6a4f;
+    color: #fff;
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .tabla-historial td {
+    border-bottom: 1px solid #e8eceb;
+    padding: 9px 8px;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .tabla-historial tbody tr:nth-child(even) {
+    background: #f5f7f7;
+  }
+</style>
+
+<div class="container historial-box">
+  <div class="panel-header mb-3">
+    <h2>&#128220; Historial de ordenes de produccion finalizadas </h2>
+    <p class="saludo-usuario">
+      Bienvenido(a), {{ session.get('usuario', 'Admin') }}. Aqui puedes consultar las ordenes de produccion finalizadas.
+    </p>
+  </div>
+
+  <div class="historial-actions">
+    <a href="{{ url_for('admin.panel') }}" class="btn btn-azul">&#11013; Volver al Panel</a>
+  </div>
+
+  <div class="tabla-wrap">
+    <table class="tabla-historial">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>OP No.</th>
+          <th>Descripcion</th>
+          <th>Operario</th>
+          <th>Cantidad</th>
+          <th>Hora Finalizacion</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if tareas and tareas|length > 0 %}
+        {% for t in tareas %}
+        <tr>
+          <td>{{ t.id }}</td>
+          <td>{{ t.titulo }}</td>
+          <td>{{ t.descripcion }}</td>
+          <td>{{ t.operario_impresion or '-' }}</td>
+          <td>{{ t.cantidad }}</td>
+          <td>{{ t.fin }}</td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+          <td colspan="6" style="text-align:center;">
+            No hay tareas finalizadas registradas.
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

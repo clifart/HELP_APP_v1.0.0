@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h1>🗂️ Panel General de Tareas</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Descripción</th>
+                <th>Asignado a</th>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in tareas %}
+            <tr>
+                <td>{{ t['id'] }}</td>
+                <td>{{ t['titulo'] }}</td>
+                <td>{{ t['descripcion'] }}</td>
+                <td>{{ t['asignado_a'] or 'Sin asignar' }}</td>
+                <td>{{ t['inicio'] or '-' }}</td>
+                <td>{{ t['fin'] or '-' }}</td>
+                <td>
+                    {% if t['estado'] == 'Finalizada' %}
+                        <span class="estado estado-finalizada">✅ Finalizada</span>
+                    {% elif t['estado'] == 'En curso' %}
+                        <span class="estado estado-en-curso">🟠 En curso</span>
+                    {% else %}
+                        <span class="estado estado-pendiente">⚪ Pendiente</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top:20px;">
+    <a href="{{ url_for('admin.panel') }}" class="btn btn-azul">⬅ Volver al panel principal</a>
+    </div>
+</div>
+{% endblock %}

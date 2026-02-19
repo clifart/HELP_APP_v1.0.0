@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+
+{# -----------------------------
+   Helpers: formateo seguro HH:MM
+   ----------------------------- #}
+{% macro hhmm(v) -%}
+  {%- if v is none -%}
+  {%- else -%}
+    {%- set s = (v|string)|trim -%}
+    {%- if s == '' -%}
+    {%- else -%}
+      {# Si viene "YYYY-MM-DD HH:MM:SS" -> tomar lo último #}
+      {%- if ' ' in s -%}{%- set s = s.split(' ')[-1] -%}{%- endif -%}
+      {# Si viene ISO "YYYY-MM-DDTHH:MM:SS" -> tomar lo último #}
+      {%- if 'T' in s -%}{%- set s = s.split('T')[-1] -%}{%- endif -%}
+
+      {%- set parts = s.split(':') -%}
+      {%- if parts|length >= 2 -%}
+        {{ '%02d'|format(parts[0]|int) }}:{{ '%02d'|format(parts[1]|int) }}
+      {%- else -%}
+        {{ s }}
+      {%- endif -%}
+    {%- endif -%}
+  {%- endif -%}
+{%- endmacro %}
+
+{# -----------------------------
+   Detectar índices de columnas
+   ----------------------------- #}
+{% set lower_headers = headers|map('lower')|list if headers else [] %}
+{% set idx_inicio = (lower_headers.index('inicio') if 'inicio' in lower_headers else none) %}
+{% set idx_fin = (lower_headers.index('fin') if 'fin' in lower_headers else none) %}
+{% set idx_tiempo = (lower_headers.index('tiempo_tarea') if 'tiempo_tarea' in lower_headers else none) %}
+
+<div style="padding:16px; max-width:1200px; margin:0 auto;">
+  <h2 style="margin:0 0 10px 0;">📋 Historial diario (HOY)</h2>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
+    <a class="btn btn-primary" href="{{ url_for('admin.carpeta_diaria') }}">📁 Carpeta diaria (web)</a>
+    <a class="btn btn-success" href="{{ url_for('admin.descargar_historial_diario_csv') }}">⬇ Descargar CSV</a>
+    <a class="btn btn-success" href="{{ url_for('admin.descargar_historial_diario_xlsx') }}">⬇ Descargar Excel</a>
+
+    <input id="filtro" type="text" placeholder="Buscar..." style="padding:8px 10px; border-radius:8px; border:1px solid #ccc; flex:1; min-width:220px;">
+  </div>
+
+  {% if not headers %}
+    <div style="padding:12px; background:#fff3cd; border:1px solid #ffeeba; border-radius:10px;">
+      No hay datos para mostrar.<br>
+      <small>Ruta esperada: <code>{{ ruta }}</code></small>
+    </div>
+  {% else %}
+    <div style="overflow:auto; background:white; border-radius:12px; border:1px solid #e5e7eb;">
+      <table id="tabla" style="width:100%; border-collapse:collapse; font-size:14px;">
+        <thead>
+          <tr>
+            {% for h in headers %}
+              <th style="text-align:left; padding:10px; border-bottom:1px solid #e5e7eb; position:sticky; top:0; background:#f9fafb;">
+                {{ h }}
+              </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr>
+              {% for c in r %}
+                {% set j = loop.index0 %}
+                <td style="padding:10px; border-bottom:1px solid #f1f5f9;">
+                  {% if (idx_inicio is not none and j == idx_inicio)
+                        or (idx_fin is not none and j == idx_fin)
+                        or (idx_tiempo is not none and j == idx_tiempo) %}
+                    {{ hhmm(c) }}
+                  {% else %}
+                    {{ c }}
+                  {% endif %}
+                </td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+  <div style="margin-top:10px; opacity:.8;">
+    <small>Fuente: <code>{{ ruta }}</code></small>
+  </div>
+</div>
+
+<script>
+  const filtro = document.getElementById("filtro");
+  const tabla = document.getElementById("tabla");
+  if (filtro && tabla) {
+    filtro.addEventListener("input", () => {
+      const q = filtro.value.toLowerCase();
+      const rows = tabla.querySelectorAll("tbody tr");
+      rows.forEach(tr => {
+        tr.style.display = tr.innerText.toLowerCase().includes(q) ? "" : "none";
+      });
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,495 @@
+﻿{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+
+  <!-- WRAPPER CENTRADO (NO CAMBIA FUNCIONALIDAD) -->
+  <div class="modo-tecnico-wrap">
+
+    <!-- ENCABEZADO -->
+    <div class="panel-header text-center mb-4">
+      <h2>MODO TECNICO - HELP_APP</h2>
+      <p>Acceso autorizado para mantenimiento y diagnostico interno.</p>
+    </div>
+
+
+    <!-- ACCIONES CENTRADAS (TODO ALINEADO AL CENTRO) -->
+    <div class="modo-tecnico-acciones">
+
+      <!-- ACCION: LIMPIAR HISTORIAL (DEMO) -->
+      <div class="accion-tech">
+        <form id="form-limpiar-historial" action="{{ url_for('admin.limpiar_historial') }}" method="POST"
+          class="text-center mb-0">
+          <input type="hidden" name="clave_tecnica" value="{{ session.get('clave_tecnica', '') }}">
+          <button type="button" id="btn-limpiar-historial" class="btn btn-warning btn-lg btn-tech">
+            Limpiar historial (Demo)
+          </button>
+        </form>
+
+        <div class="accion-descripcion text-muted">
+          Solo para dejar HELP_APP limpio para demostraciones. No elimina usuarios ni OP activas.
+        </div>
+      </div>
+
+      <!-- ACCION: PRUEBA AUTO-CIERRE (SIMULADA) -->
+      <div class="accion-tech">
+        <form action="{{ url_for('admin.test_autocierre_modo_tecnico') }}" method="POST" class="text-center mb-0">
+          <input type="hidden" name="clave_tecnica" value="{{ session.get('clave_tecnica', '') }}">
+          <button type="submit" class="btn btn-primary btn-lg btn-tech">
+            Probar autocierre (simulado)
+          </button>
+        </form>
+        <div class="accion-descripcion text-muted">
+          Crea una copia de la BD y simula tareas olvidadas (sabado diurno/nocturno y un caso que no debe cerrar).
+        </div>
+      </div>
+    </div>
+
+
+    <!-- TARJETA AMARILLA TIPO HELP_APP PARA CONFIRMAR LIMPIEZA -->
+    <div id="toast-limpiar" class="toast-limpiar-oculto">
+      <div class="toast-limpiar-contenido">
+        <div class="toast-limpiar-icono">!</div>
+        <div class="toast-limpiar-mensaje">
+          <strong>Atencion</strong><br>
+          Esta accion limpiara el historial para DEMO:
+          <ul style="margin-top:6px; margin-bottom:6px; padding-left:18px;">
+            <li>Todo el historial de tareas de los usuarios</li>
+            <li>Todos los checklists de impresion</li>
+            <li>Todas las tareas <strong>FINALIZADAS</strong> del administrador</li>
+          </ul>
+          <span style="color:#155724; font-weight:500;">
+            Las OP activas y tareas en curso se mantienen.
+          </span>
+          <br><br>
+          Seguro que quieres limpiar el historial para DEMO?
+          <div class="toast-limpiar-acciones">
+            <button type="button" id="btn-limpiar-cancelar" class="btn btn-sm btn-outline-dark">Cancelar</button>
+            <button type="button" id="btn-limpiar-confirmar" class="btn btn-sm btn-success">Continuar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if test_result %}
+    <div class="card shadow-sm p-3 mt-3">
+      <h4 class="mb-2 text-success">Resultado prueba autocierre</h4>
+      {% if test_result.error %}
+      <div class="alert alert-danger mb-0">
+        {{ test_result.error }}
+      </div>
+      {% else %}
+      <div class="test-row"><strong>Inicio sabado diurno:</strong> {{ test_result.inicio_sabado_diurno }}</div>
+      <div class="test-row"><strong>Inicio viernes nocturno:</strong> {{ test_result.inicio_viernes_noct }}</div>
+      <div class="test-row"><strong>Inicio caso no cierre:</strong> {{ test_result.inicio_no_cierre }}</div>
+      {% if test_result.debug_aviso_seg is defined %}
+      <div class="test-row"><strong>DEBUG_AVISO_SEG activo:</strong> {{ test_result.debug_aviso_seg }}</div>
+      {% endif %}
+      <div class="test-row"><strong>Cerradas:</strong> {{ test_result.cerradas }}</div>
+      <div class="test-row">
+        <strong>sabado diurno:</strong>
+        estado={{ test_result.sabado_diurno.estado }},
+        fin={{ test_result.sabado_diurno.fin }},
+        cierre_auto={{ test_result.sabado_diurno.cierre_auto }}
+      </div>
+      <div class="test-row">
+        <strong>viernes nocturno:</strong>
+        estado={{ test_result.viernes_noct.estado }},
+        fin={{ test_result.viernes_noct.fin }},
+        cierre_auto={{ test_result.viernes_noct.cierre_auto }}
+      </div>
+      <div class="test-row">
+        <strong>no cierre:</strong>
+        estado={{ test_result.no_cierre.estado }},
+        fin={{ test_result.no_cierre.fin }},
+        cierre_auto={{ test_result.no_cierre.cierre_auto }}
+      </div>
+      <div class="test-row"><strong>BD copia:</strong> {{ test_result.db_copy }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- SECCION USUARIOS -->
+    <div class="card shadow-sm p-3 mt-4">
+      <h4 class="mb-3 text-success">Usuarios Registrados</h4>
+
+      {% if usuarios and usuarios|length > 0 %}
+      <div class="modo-tech-usuarios">
+        <label for="mt_usuario_select" class="modo-tech-usuarios__label">Usuario</label>
+        <div class="modo-tech-usuarios__row">
+          <div class="modo-tech-usuarios__control">
+            <select id="mt_usuario_select" class="form-select">
+              {% for u in usuarios %}
+              <option value="{{ u.id }}" data-nombre="{{ u.nombre }}" data-celular="{{ u.celular or '-' }}"
+                data-rol="{{ u.rol }}" data-reset-url="{{ url_for('admin.reset_password_usuario', user_id=u.id) }}"
+                data-cambiar-url="{{ url_for('admin.cambiar_password_usuario', user_id=u.id) }}"
+                data-eliminar-url="{{ url_for('admin.eliminar_usuario', id=u.id) }}">
+                {{ u.nombre }}{% if u.celular %} - {{ u.celular }}{% endif %} ({{ u.rol }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="modo-tech-usuarios__actions">
+            <form id="mt_reset_form" method="POST"
+              action="{{ url_for('admin.reset_password_usuario', user_id=usuarios[0].id) }}">
+              <input type="hidden" name="clave_tecnica" value="{{ session.get('clave_tecnica', '') }}">
+              <button type="submit" id="mt_reset_btn" class="btn btn-warning btn-sm">
+                Reset (1234)
+              </button>
+            </form>
+
+            <form id="mt_cambiar_form" action="{{ url_for('admin.cambiar_password_usuario', user_id=usuarios[0].id) }}"
+              method="POST" class="form-cambiar-pass">
+              <input type="hidden" name="clave_tecnica" value="{{ session.get('clave_tecnica', '') }}">
+              <input type="hidden" name="nueva_contrasena" value="">
+              <button type="button" id="mt_cambiar_btn" class="btn btn-outline-secondary btn-sm btn-cambiar-pass"
+                data-nombre="{{ usuarios[0].nombre }}">
+                Cambiar clave
+              </button>
+            </form>
+
+            <form id="mt_eliminar_form" action="{{ url_for('admin.eliminar_usuario', id=usuarios[0].id) }}"
+              method="POST">
+              <button type="submit" id="mt_eliminar_btn" class="btn btn-danger btn-sm">Eliminar</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="modo-tech-usuarios__meta">
+          <div><strong>ID:</strong> <span id="mt_meta_id">-</span></div>
+          <div><strong>Nombre:</strong> <span id="mt_meta_nombre">-</span></div>
+          <div><strong>Celular:</strong> <span id="mt_meta_celular">-</span></div>
+          <div><strong>Rol:</strong> <span id="mt_meta_rol">-</span></div>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-muted mb-0">No hay usuarios registrados.</p>
+      {% endif %}
+    </div>
+
+    <!-- BOTON VOLVER (FUERA DEL RECTANGULO) -->
+    <div class="text-center mt-5 mb-2" style="margin-top: 40px;">
+      <a href="{{ url_for('admin.panel') }}" class="btn btn-secondary">Volver al Panel de Administracion</a>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  /* 1) CENTRAR TODO EL MODO TECNICO SIN CAMBIAR DISENO BASE */
+  .modo-tecnico-wrap {
+    max-width: 980px;
+    /* ajusta a tu gusto: 900-1100 */
+    margin: 0 auto;
+    /* centra */
+  }
+
+  /* 2) ACCIONES: que queden centradas y ordenadas */
+  .modo-tecnico-acciones {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* centra botones y textos */
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .modo-tecnico-acciones form {
+    width: 100%;
+  }
+
+  /* para que los botones no queden demasiado anchos en PC */
+  .modo-tecnico-acciones .btn-lg {
+    min-width: 280px;
+    max-width: 360px;
+    width: 100%;
+  }
+
+  /* (tu estilo original, sin cambios de logica) */
+  .panel-header h2 {
+    color: #15614f;
+    font-weight: 700;
+  }
+
+  .card {
+    border-radius: 12px;
+    background: #f9fff8;
+  }
+
+  .modo-tech-usuarios {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 10px;
+    background: #fbfffb;
+    --mt-control-height: 38px;
+  }
+
+  .modo-tech-usuarios__label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .modo-tech-usuarios__row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .modo-tech-usuarios__control {
+    flex: 1;
+    min-width: 460px;
+  }
+
+  .modo-tech-usuarios__control .form-select {
+    width: 100%;
+    max-width: none;
+    height: var(--mt-control-height);
+  }
+
+  .modo-tech-usuarios__actions {
+    margin-left: auto;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .modo-tech-usuarios__actions form {
+    margin: 0;
+  }
+
+  .modo-tech-usuarios__actions .btn {
+    height: var(--mt-control-height);
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .modo-tech-usuarios__meta {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 6px 12px;
+    font-size: 0.9rem;
+    color: #333;
+  }
+
+  .test-row {
+    padding: 4px 0;
+    border-bottom: 1px dashed #d6e7d6;
+    font-size: 0.92rem;
+  }
+
+  .test-row:last-child {
+    border-bottom: none;
+  }
+
+  table th {
+    background-color: #0f6a4f !important;
+    color: white !important;
+  }
+
+  .btn-success {
+    background-color: #15614f !important;
+    border: none !important;
+  }
+
+  .form-modo-tecnico input[type=password] {
+    max-width: 400px;
+    margin: 0 auto 10px auto;
+    display: block;
+    text-align: center;
+  }
+
+  /* Toast amarillo tipo HELP_APP para limpiar historial (igual, solo mas seguro en movil) */
+  .toast-limpiar-oculto {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 3000;
+    display: none;
+  }
+
+  .toast-limpiar-oculto.activo {
+    display: block;
+  }
+
+  .toast-limpiar-contenido {
+    background-color: #ffc107;
+    color: #212529;
+    padding: 10px 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: 380px;
+    font-size: 14px;
+  }
+
+  .toast-limpiar-icono {
+    font-size: 20px;
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  .toast-limpiar-mensaje {
+    flex: 1;
+  }
+
+  .toast-limpiar-acciones {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  @media (max-width: 576px) {
+    .modo-tech-usuarios__row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .modo-tech-usuarios__actions {
+      margin-left: 0;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .toast-limpiar-oculto {
+      top: auto;
+      bottom: 14px;
+      right: 12px;
+      left: 12px;
+    }
+
+    .toast-limpiar-contenido {
+      max-width: 100%;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    /* ====== TOAST LIMPIAR HISTORIAL ====== */
+    const btnLimpiar = document.getElementById('btn-limpiar-historial');
+    const formLimpiar = document.getElementById('form-limpiar-historial');
+    const toast = document.getElementById('toast-limpiar');
+    const btnCancelar = document.getElementById('btn-limpiar-cancelar');
+    const btnConfirmar = document.getElementById('btn-limpiar-confirmar');
+
+    const mostrarToast = () => { if (toast) toast.classList.add('activo'); };
+    const ocultarToast = () => { if (toast) toast.classList.remove('activo'); };
+
+    if (btnLimpiar) btnLimpiar.addEventListener('click', mostrarToast);
+    if (btnCancelar) btnCancelar.addEventListener('click', ocultarToast);
+
+    if (btnConfirmar && formLimpiar) {
+      btnConfirmar.addEventListener('click', () => {
+        formLimpiar.submit();
+        ocultarToast();
+      });
+    }
+
+    /* ====== CAMBIAR CONTRASENA (prompt) ====== */
+    document.querySelectorAll('.btn-cambiar-pass').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const nombre = btn.dataset.nombre || 'este usuario';
+        const nueva = prompt("Escribe la nueva contrasena para " + nombre + ":");
+
+        if (nueva === null) return;
+
+        const valor = nueva.trim();
+        if (!valor) {
+          alert("La contrasena no puede estar vacia.");
+          return;
+        }
+
+        const form = btn.closest('form');
+        form.querySelector("input[name='nueva_contrasena']").value = valor;
+        form.submit();
+      });
+    });
+
+    /* ====== SELECTOR USUARIOS (MODO TECNICO) ====== */
+    const mtSelect = document.getElementById('mt_usuario_select');
+    const mtResetForm = document.getElementById('mt_reset_form');
+    const mtResetBtn = document.getElementById('mt_reset_btn');
+    const mtCambiarForm = document.getElementById('mt_cambiar_form');
+    const mtCambiarBtn = document.getElementById('mt_cambiar_btn');
+    const mtEliminarForm = document.getElementById('mt_eliminar_form');
+    const mtMetaId = document.getElementById('mt_meta_id');
+    const mtMetaNombre = document.getElementById('mt_meta_nombre');
+    const mtMetaCelular = document.getElementById('mt_meta_celular');
+    const mtMetaRol = document.getElementById('mt_meta_rol');
+
+    const actualizarMTUsuario = () => {
+      if (!mtSelect) return;
+      const option = mtSelect.options[mtSelect.selectedIndex];
+      if (!option) return;
+
+      const nombre = option.dataset.nombre || option.textContent.trim();
+      const celular = option.dataset.celular || '-';
+      const rol = option.dataset.rol || '-';
+      const resetUrl = option.dataset.resetUrl || '';
+      const cambiarUrl = option.dataset.cambiarUrl || '';
+      const eliminarUrl = option.dataset.eliminarUrl || '';
+
+      if (mtMetaId) mtMetaId.textContent = option.value || '-';
+      if (mtMetaNombre) mtMetaNombre.textContent = nombre || '-';
+      if (mtMetaCelular) mtMetaCelular.textContent = celular;
+      if (mtMetaRol) mtMetaRol.textContent = rol;
+
+      if (mtResetForm && resetUrl) mtResetForm.action = resetUrl;
+      if (mtCambiarForm && cambiarUrl) mtCambiarForm.action = cambiarUrl;
+      if (mtEliminarForm && eliminarUrl) mtEliminarForm.action = eliminarUrl;
+
+      if (mtResetBtn) {
+        const isAdmin = rol === 'admin';
+        mtResetBtn.classList.toggle('btn-danger', isAdmin);
+        mtResetBtn.classList.toggle('btn-warning', !isAdmin);
+      }
+
+      if (mtResetForm) {
+        mtResetForm.dataset.confirmNombre = nombre || '';
+        mtResetForm.dataset.confirmAdmin = rol === 'admin' ? '1' : '0';
+      }
+
+      if (mtEliminarForm) {
+        mtEliminarForm.dataset.confirmNombre = nombre || '';
+      }
+
+      if (mtCambiarBtn) {
+        mtCambiarBtn.dataset.nombre = nombre || '';
+      }
+    };
+
+    if (mtSelect) {
+      mtSelect.addEventListener('change', actualizarMTUsuario);
+      actualizarMTUsuario();
+    }
+
+    if (mtResetForm) {
+      mtResetForm.addEventListener('submit', (e) => {
+        const nombre = mtResetForm.dataset.confirmNombre || '';
+        const isAdmin = mtResetForm.dataset.confirmAdmin === '1';
+        const mensaje = isAdmin
+          ? `Atencion: Resetear contrasena del ADMIN ${nombre} a 1234?`
+          : `Resetear contrasena de ${nombre} a 1234?`;
+        if (!confirm(mensaje)) e.preventDefault();
+      });
+    }
+
+    if (mtEliminarForm) {
+      mtEliminarForm.addEventListener('submit', (e) => {
+        const nombre = mtEliminarForm.dataset.confirmNombre || '';
+        const mensaje = `Vas a eliminar al usuario ${nombre}.\n\nEsta accion es permanente y no podras deshacerla.\n\nQuieres continuar?`;
+        if (!confirm(mensaje)) e.preventDefault();
+      });
+    }
+  });
+</script>
+
+{% endblock %}

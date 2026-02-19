@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+
+    <div class="panel-header">
+        <h2>Historial de tareas finalizadas</h2>
+    </div>
+
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-left: 10px;">
+        <a href="{{ url_for('admin.panel') }}" class="btn btn-azul">Volver al Panel</a>
+    </div>
+</div>
+
+<p class="saludo-usuario">
+    Aqui puedes consultar las tareas finalizadas.
+</p>
+
+<div class="tabla-contenedor">
+    <table class="tabla">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>OP</th>
+                <th>Descripcion</th>
+                <th>Proceso</th>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th>Cantidad</th>
+                <th>Usuario</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if tareas and tareas|length > 0 %}
+            {% for t in tareas %}
+            <tr>
+                <td>{{ t.id }}</td>
+                <td>{{ t.titulo }}</td>
+                <td>{{ t.descripcion }}</td>
+                <td>{{ t.proceso }}</td>
+                <td>{{ t.inicio }}</td>
+                <td>{{ t.fin }}</td>
+                <td>{{ t.cantidad }}</td>
+                <td>{{ t.usuario_asignado }}</td>
+                <td>{{ t.estado }}</td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="9" style="text-align:center;">
+                    No hay tareas finalizadas registradas.
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="login-container">
+
+  <h1>🔐 Ingreso a HELP_APP</h1>
+  <p style="color:#555;">Selecciona tu usuario y escribe su contraseña.</p>
+
+
+
+  <!-- ======================================================= -->
+  <!-- FORMULARIO DE INGRESO PROTEGIDO -->
+  <!-- ======================================================= -->
+  <form action="{{ url_for('login') }}" method="POST" class="login-form" autocomplete="off">
+
+    <!-- Lista de usuarios existentes -->
+    {% if usuarios and usuarios|length > 0 %}
+      <select name="nombre" required autocomplete="off">
+        <option value="">-- Selecciona usuario --</option>
+        {% for u in usuarios %}
+          <option value="{{ u['nombre'] }}">{{ u['nombre'] }} ({{ u['rol'] }})</option>
+        {% endfor %}
+      </select>
+    {% else %}
+      <p style="color: #b71c1c; font-weight: 500;">
+        ⚠️ No hay usuarios registrados aún. Inicia sesión como administrador para crearlos.
+      </p>
+    {% endif %}
+
+   <!-- Campo de contraseña sin autocompletado -->
+<input
+  id="fakePassword"
+  type="text"
+  placeholder="Contraseña"
+  required
+  autocomplete="off"
+  onfocus="this.type='password'; this.removeAttribute('readonly');"
+  readonly
+/>
+<input type="hidden" name="contrasena" id="realPassword">
+
+<script>
+  const fakeInput = document.getElementById("fakePassword");
+  const realInput = document.getElementById("realPassword");
+
+  fakeInput.addEventListener("input", () => {
+    realInput.value = fakeInput.value; // sincroniza lo que escribe el usuario
+  });
+</script>
+
+
+    <!-- Botón de ingreso -->
+    <button type="submit" class="btn btn-verde">Entrar</button>
+  </form>
+
+  <!-- Mensaje informativo -->
+  <p style="margin-top: 20px; color: #666; text-align:center;">
+    💡 Si eres administrador, selecciona tu usuario con rol
+    <strong>Administrador</strong>.
+  </p>
+</div>
+
+<!-- ======================================================= -->
+<!-- DESVANECER AUTOMÁTICAMENTE LOS MENSAJES FLASH -->
+<!-- ======================================================= -->
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const alerts = document.querySelectorAll('.alert');
+    if (alerts.length) {
+      setTimeout(() => {
+        alerts.forEach(el => {
+          el.style.transition = 'opacity 0.6s ease';
+          el.style.opacity = '0';
+          setTimeout(() => el.remove(), 600);
+        });
+      }, 4000);
+    }
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="max-width: 420px; margin-top: 40px;">
+    <h2 class="text-center mb-3">🔐 Crear contraseña personal</h2>
+    <p class="text-center">
+        Hola <strong>{{ nombre }}</strong>, esta contraseña será solo tuya.
+        Nadie más podrá verla.
+    </p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ cat }} mt-2">{{ msg }}</div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <form method="POST" class="mt-3">
+        <div class="mb-3">
+            <label for="nueva_contrasena" class="form-label">Nueva contraseña</label>
+            <input type="password" name="nueva_contrasena" id="nueva_contrasena" class="form-control" required
+                minlength="4">
+        </div>
+        <div class="mb-3">
+            <label for="confirmar_contrasena" class="form-label">Confirmar contraseña</label>
+            <input type="password" name="confirmar_contrasena" id="confirmar_contrasena" class="form-control" required
+                minlength="4">
+        </div>
+        <button type="submit" class="btn btn-success w-100">
+            Guardar contraseña y continuar
+        </button>
+    </form>
+
+    <div class="text-center mt-3">
+        <a href="{{ url_for('login') }}">Volver al login</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h1>✏️ Editar Usuario</h1>
+
+    <form action="{{ url_for('modificar_usuario', id=usuario['id']) }}" method="POST">
+        <label>Nombre:</label>
+        <input type="text" name="nombre" value="{{ usuario['nombre'] }}" required>
+
+        <label>Celular:</label>
+        <input type="text" name="celular" value="{{ usuario['celular'] }}">
+
+        <label>Rol:</label>
+        <select name="rol" required>
+            <option value="user" {% if usuario['rol']=='user' %}selected{% endif %}>Usuario</option>
+            <option value="admin" {% if usuario['rol']=='admin' %}selected{% endif %}>Administrador</option>
+        </select>
+
+        <div style="margin-top:15px;">
+            <button type="submit" class="btn btn-azul">💾 Guardar Cambios</button>
+            <a href="{{ url_for('admin.panel') }}" class="btn btn-rojo">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
