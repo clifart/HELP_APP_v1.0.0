@@ -43,9 +43,106 @@ def _column_exists(conn, table_name: str, column_name: str) -> bool:
     return any(row["name"] == column_name for row in cur.fetchall())
 
 
+def _table_exists(conn, table_name: str) -> bool:
+    cur = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=? LIMIT 1;",
+        (table_name,),
+    )
+    return cur.fetchone() is not None
+
+
 def _ensure_column(conn, table: str, column: str, col_def: str):
     if not _column_exists(conn, table, column):
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_def};")
+
+
+def _chunks(values, size: int = 200):
+    for i in range(0, len(values), size):
+        yield values[i:i + size]
+
+
+def _normalize_user_names(conn):
+    """
+    Normaliza nombres de usuarios existentes:
+    - usuarios.nombre -> UPPER(TRIM(nombre))
+    - columnas relacionadas con usuario en otras tablas -> UPPER(TRIM(...))
+
+    Seguridad:
+    - Si hay duplicados por mayúsc/minúsc (ej. 'ana' y 'ANA'), esos casos se omiten
+      para no romper la restricción UNIQUE(nombre).
+    """
+    if not _table_exists(conn, "usuarios"):
+        return
+
+    cur = conn.cursor()
+    canon_rows = cur.execute(
+        """
+        SELECT DISTINCT UPPER(TRIM(nombre)) AS canon
+        FROM usuarios
+        WHERE nombre IS NOT NULL AND TRIM(nombre) != ''
+        """
+    ).fetchall()
+    duplicated_rows = cur.execute(
+        """
+        SELECT UPPER(TRIM(nombre)) AS canon, COUNT(*) AS total
+        FROM usuarios
+        WHERE nombre IS NOT NULL AND TRIM(nombre) != ''
+        GROUP BY UPPER(TRIM(nombre))
+        HAVING COUNT(*) > 1
+        """
+    ).fetchall()
+
+    canon_all = sorted({row["canon"] for row in canon_rows if row["canon"]})
+    duplicated = {row["canon"] for row in duplicated_rows if row["canon"]}
+    safe_canon = [name for name in canon_all if name not in duplicated]
+
+    if not safe_canon:
+        return
+
+    # 1) Normaliza tabla principal de usuarios
+    for group in _chunks(safe_canon):
+        marks = ",".join("?" for _ in group)
+        cur.execute(
+            f"""
+            UPDATE usuarios
+               SET nombre = UPPER(TRIM(nombre))
+             WHERE nombre IS NOT NULL
+               AND TRIM(nombre) != ''
+               AND nombre != UPPER(TRIM(nombre))
+               AND UPPER(TRIM(nombre)) IN ({marks})
+            """,
+            tuple(group),
+        )
+
+    # 2) Normaliza referencias de usuario en tablas relacionadas
+    references = (
+        ("tareas", "asignado_a"),
+        ("tareas", "usuario_asignado"),
+        ("historial_tareas", "usuario"),
+        ("checklist_impresion", "usuario"),
+        ("checklist_modulos", "usuario"),
+        ("registro_excel_log", "usuario"),
+    )
+
+    for table_name, column_name in references:
+        if not _table_exists(conn, table_name):
+            continue
+        if not _column_exists(conn, table_name, column_name):
+            continue
+
+        for group in _chunks(safe_canon):
+            marks = ",".join("?" for _ in group)
+            cur.execute(
+                f"""
+                UPDATE {table_name}
+                   SET {column_name} = UPPER(TRIM({column_name}))
+                 WHERE {column_name} IS NOT NULL
+                   AND TRIM({column_name}) != ''
+                   AND {column_name} != UPPER(TRIM({column_name}))
+                   AND UPPER(TRIM({column_name})) IN ({marks})
+                """,
+                tuple(group),
+            )
 
 
 # ---------- Esquema ----------
@@ -91,6 +188,12 @@ def ensure_schema():
         # Compatibilidad: tu archivo mezcla usuario_asignado y asignado_a
         _ensure_column(conn, "tareas", "asignado_a", "TEXT")
         _ensure_column(conn, "tareas", "usuario_asignado", "TEXT")
+
+        # Migración segura: nombres de usuario en MAYÚSCULAS y referencias alineadas.
+        try:
+            _normalize_user_names(conn)
+        except Exception as e:
+            print(f"[WARN] No se pudo normalizar nombres de usuarios: {e}")
 
         conn.commit()
 
