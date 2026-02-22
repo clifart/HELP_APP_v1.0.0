@@ -448,6 +448,7 @@
     }
 
     // ===== AUTO-CIERRE POR 8 HORAS =====
+    const AUTO_CIERRE_HABILITADO = false;
     // ✅ MODO PRUEBA: poner 30 para avisar 30s después de iniciar
     // (dejar en 0 para volver a 8 horas)
     const DEBUG_AVISO_SEG = Number('{{ debug_aviso_seg|default(0)|int }}');
@@ -830,6 +831,7 @@
     }
 
     function _programarAvisoFila(fila) {
+        if (!AUTO_CIERRE_HABILITADO) return;
         if (!fila) return;
         if ((fila.dataset.extendido || "0") === "1") return;
         if ((fila.dataset.estado || "").trim() !== "En curso") return;

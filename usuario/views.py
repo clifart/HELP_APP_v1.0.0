@@ -969,6 +969,7 @@ def extender_horario_tarea():
 def autocerrar_tarea_usuario():
     if not _solo_usuario():
         return jsonify({"ok": False, "msg": "No autorizado"}), 403
+    return jsonify({"ok": False, "msg": "Autocierre desactivado."}), 400
 
     data = request.get_json(silent=True) or {}
     tarea_id = data.get("id")
