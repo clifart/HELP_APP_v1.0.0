@@ -31,18 +31,6 @@
         </div>
       </div>
 
-      <!-- ACCION: PRUEBA AUTO-CIERRE (SIMULADA) -->
-      <div class="accion-tech">
-        <form action="{{ url_for('admin.test_autocierre_modo_tecnico') }}" method="POST" class="text-center mb-0">
-          <input type="hidden" name="clave_tecnica" value="{{ session.get('clave_tecnica', '') }}">
-          <button type="submit" class="btn btn-primary btn-lg btn-tech">
-            Probar autocierre (simulado)
-          </button>
-        </form>
-        <div class="accion-descripcion text-muted">
-          Crea una copia de la BD y simula tareas olvidadas (sabado diurno/nocturno y un caso que no debe cerrar).
-        </div>
-      </div>
     </div>
 
 
@@ -70,44 +58,6 @@
         </div>
       </div>
     </div>
-
-    {% if test_result %}
-    <div class="card shadow-sm p-3 mt-3">
-      <h4 class="mb-2 text-success">Resultado prueba autocierre</h4>
-      {% if test_result.error %}
-      <div class="alert alert-danger mb-0">
-        {{ test_result.error }}
-      </div>
-      {% else %}
-      <div class="test-row"><strong>Inicio sabado diurno:</strong> {{ test_result.inicio_sabado_diurno }}</div>
-      <div class="test-row"><strong>Inicio viernes nocturno:</strong> {{ test_result.inicio_viernes_noct }}</div>
-      <div class="test-row"><strong>Inicio caso no cierre:</strong> {{ test_result.inicio_no_cierre }}</div>
-      {% if test_result.debug_aviso_seg is defined %}
-      <div class="test-row"><strong>DEBUG_AVISO_SEG activo:</strong> {{ test_result.debug_aviso_seg }}</div>
-      {% endif %}
-      <div class="test-row"><strong>Cerradas:</strong> {{ test_result.cerradas }}</div>
-      <div class="test-row">
-        <strong>sabado diurno:</strong>
-        estado={{ test_result.sabado_diurno.estado }},
-        fin={{ test_result.sabado_diurno.fin }},
-        cierre_auto={{ test_result.sabado_diurno.cierre_auto }}
-      </div>
-      <div class="test-row">
-        <strong>viernes nocturno:</strong>
-        estado={{ test_result.viernes_noct.estado }},
-        fin={{ test_result.viernes_noct.fin }},
-        cierre_auto={{ test_result.viernes_noct.cierre_auto }}
-      </div>
-      <div class="test-row">
-        <strong>no cierre:</strong>
-        estado={{ test_result.no_cierre.estado }},
-        fin={{ test_result.no_cierre.fin }},
-        cierre_auto={{ test_result.no_cierre.cierre_auto }}
-      </div>
-      <div class="test-row"><strong>BD copia:</strong> {{ test_result.db_copy }}</div>
-      {% endif %}
-    </div>
-    {% endif %}
 
     <!-- SECCION USUARIOS -->
     <div class="card shadow-sm p-3 mt-4">

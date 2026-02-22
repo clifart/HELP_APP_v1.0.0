@@ -15,9 +15,7 @@ import subprocess
 from flask import current_app
 from core import now_iso
 from flask import send_from_directory, abort
-from datetime import datetime, timedelta
-from pathlib import Path
-import shutil
+from datetime import datetime
 
 
 
@@ -74,130 +72,6 @@ def _asegurar_cols_historial(cur):
             cur.execute("ALTER TABLE historial_tareas ADD COLUMN cierre_automatico INTEGER DEFAULT 0")
         except sqlite3.OperationalError:
             pass
-
-
-def _run_autocierre_test():
-    import core.db as db
-    import core.auto_cierre as ac
-
-    src = Path(db.DB_PATH)
-    dst = src.with_name("database_test_autocierre.db")
-    shutil.copy2(src, dst)
-
-    old_db_path = db.DB_PATH
-    db.DB_PATH = dst
-
-    # Evitar escritura de Excel en prueba
-    old_reg = ac.registrar_tarea_diaria
-    ac.registrar_tarea_diaria = lambda *a, **k: None
-
-    try:
-        conn = sqlite3.connect(str(dst))
-        conn.row_factory = sqlite3.Row
-        cur = conn.cursor()
-        ensure_tareas_columns(conn)
-
-        hoy = datetime.now()
-        offset = (hoy.weekday() - 5) % 7
-        if offset == 0:
-            offset = 7
-
-        sabado_diurno = (hoy - timedelta(days=offset)).replace(
-            hour=6, minute=0, second=0, microsecond=0
-        )
-        # Viernes nocturno (21:30)
-        offset_vie = (hoy.weekday() - 4) % 7
-        if offset_vie == 0:
-            offset_vie = 7
-        viernes_noct = (hoy - timedelta(days=offset_vie)).replace(
-            hour=21, minute=30, second=0, microsecond=0
-        )
-        no_cierre = (hoy - timedelta(hours=1)).replace(
-            second=0, microsecond=0
-        )
-
-        test_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-        op_sabado = f"OP_TEST_SABADO_{test_id}"
-        op_noct = f"OP_TEST_NOCT_VIE_{test_id}"
-        op_no_cierre = f"OP_TEST_NO_CIERRE_{test_id}"
-
-        cur.execute(
-            """
-            INSERT INTO tareas (titulo, descripcion, proceso, asignado_a, inicio, estado, cantidad, horario_extendido)
-            VALUES (?, ?, ?, ?, ?, 'En curso', 0, 0)
-            """,
-            (op_sabado, "PRUEBA SABADO AUTOCIERRE", "TEST", "usuario_olvido",
-             sabado_diurno.strftime("%Y-%m-%d %H:%M:%S")),
-        )
-        cur.execute(
-            """
-            INSERT INTO tareas (titulo, descripcion, proceso, asignado_a, inicio, estado, cantidad, horario_extendido)
-            VALUES (?, ?, ?, ?, ?, 'En curso', 0, 0)
-            """,
-            (op_noct, "PRUEBA NOCTURNO VIERNES", "TEST", "usuario_olvido",
-             viernes_noct.strftime("%Y-%m-%d %H:%M:%S")),
-        )
-        cur.execute(
-            """
-            INSERT INTO tareas (titulo, descripcion, proceso, asignado_a, inicio, estado, cantidad, horario_extendido)
-            VALUES (?, ?, ?, ?, ?, 'En curso', 0, 0)
-            """,
-            (op_no_cierre, "PRUEBA NO CIERRE", "TEST", "usuario_olvido",
-             no_cierre.strftime("%Y-%m-%d %H:%M:%S")),
-        )
-        conn.commit()
-        conn.close()
-
-        cerradas = ac.ejecutar_autocierre()
-
-        conn = sqlite3.connect(str(dst))
-        cur = conn.cursor()
-
-        row1 = cur.execute(
-            "SELECT estado, fin FROM tareas WHERE titulo=? ORDER BY id DESC LIMIT 1",
-            (op_sabado,),
-        ).fetchone()
-        row1h = cur.execute(
-            "SELECT cierre_automatico FROM historial_tareas WHERE op_no=? ORDER BY id DESC LIMIT 1",
-            (op_sabado,),
-        ).fetchone()
-
-        row2 = cur.execute(
-            "SELECT estado, fin FROM tareas WHERE titulo=? ORDER BY id DESC LIMIT 1",
-            (op_noct,),
-        ).fetchone()
-        row2h = cur.execute(
-            "SELECT cierre_automatico FROM historial_tareas WHERE op_no=? ORDER BY id DESC LIMIT 1",
-            (op_noct,),
-        ).fetchone()
-
-        row3 = cur.execute(
-            "SELECT estado, fin FROM tareas WHERE titulo=? ORDER BY id DESC LIMIT 1",
-            (op_no_cierre,),
-        ).fetchone()
-        row3h = cur.execute(
-            "SELECT cierre_automatico FROM historial_tareas WHERE op_no=? ORDER BY id DESC LIMIT 1",
-            (op_no_cierre,),
-        ).fetchone()
-
-        conn.close()
-
-        return {
-            "inicio_sabado_diurno": sabado_diurno.strftime("%Y-%m-%d %H:%M:%S"),
-            "inicio_viernes_noct": viernes_noct.strftime("%Y-%m-%d %H:%M:%S"),
-            "inicio_no_cierre": no_cierre.strftime("%Y-%m-%d %H:%M:%S"),
-            "cerradas": int(cerradas or 0),
-            "sabado_diurno": {"estado": row1[0] if row1 else "-", "fin": row1[1] if row1 else "-",
-                              "cierre_auto": row1h[0] if row1h else None},
-            "viernes_noct": {"estado": row2[0] if row2 else "-", "fin": row2[1] if row2 else "-",
-                             "cierre_auto": row2h[0] if row2h else None},
-            "no_cierre": {"estado": row3[0] if row3 else "-", "fin": row3[1] if row3 else "-",
-                          "cierre_auto": row3h[0] if row3h else None},
-            "db_copy": str(dst),
-        }
-    finally:
-        db.DB_PATH = old_db_path
-        ac.registrar_tarea_diaria = old_reg
 
 
 # ==========================================================
@@ -1180,28 +1054,7 @@ def modo_tecnico():
                 backups.append({"nombre": d, "ruta": full_path, "fecha": fecha_legible})
 
     backups = sorted(backups, key=lambda x: x["nombre"], reverse=True)
-    test_result = session.pop("autocierre_test_result", None)
-    return render_template('modo_tecnico.html', usuarios=usuarios, backups=backups, test_result=test_result)
-
-
-@admin_bp.route('/modo_tecnico/test_autocierre', methods=['POST'])
-def test_autocierre_modo_tecnico():
-    if session.get('clave_tecnica') != CLAVE_TECNICA:
-        flash("Acceso denegado al modo técnico.", "danger")
-        return redirect(url_for('admin.panel'))
-
-    try:
-        # Activa modo prueba del aviso SOLO para esta sesión (one-shot, 30s).
-        session["debug_aviso_seg"] = 30
-        result = _run_autocierre_test()
-        result["debug_aviso_seg"] = int(session.get("debug_aviso_seg", 0) or 0)
-        session["autocierre_test_result"] = result
-        flash("âœ… Prueba de autocierre ejecutada (simulada). Modo prueba activo (one-shot): aviso a los 30s.", "success")
-    except Exception as e:
-        session["autocierre_test_result"] = {"error": str(e)}
-        flash(f"âš ï¸ Error en prueba de autocierre: {e}", "danger")
-
-    return redirect(url_for('usuario.panel'))
+    return render_template('modo_tecnico.html', usuarios=usuarios, backups=backups)
 
 
 @admin_bp.route('/reset_password_usuario/<int:user_id>', methods=['POST'])

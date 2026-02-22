@@ -6,7 +6,6 @@ import webbrowser
 
 from flask import Flask, request
 from core.db import ensure_schema  # solo esto desde core.db aquí
-from core.auto_cierre import iniciar_hilo_autocierre
 
 
 # Intentamos importar la carpeta diaria; si falla, no rompemos la app
@@ -384,7 +383,6 @@ if __name__ == "__main__":
         raise SystemExit(0)
 
     app = create_app()
-    iniciar_hilo_autocierre(60)
 
     ip = _ip_lan()
 
