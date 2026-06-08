@@ -411,24 +411,55 @@
                         <td class="col-opt opt-head"></td>
                     </tr>
 
+                    <tr class="section-row">
+                        <td class="col-num">1</td>
+                        <td class="col-desc">Se entrega paquete (Punto I)</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
                     {% set enc_items = [
-                    ("1", "Se entrega paquete (Punto I)", "enc_entrega_paquete"),
                     ("1.1", "Orden de Producción", "enc_op"),
-                    ("2", "Revisar producto", "enc_revisar_producto"),
                     ("2.1", "Color (Dentro de carta de color)", "enc_color_carta"),
                     ("2.2", "Plastificado", "enc_plastificado"),
                     ("2.3", "Brillo", "enc_brillo"),
-                    ("3", "Papelería", "enc_papeleria"),
-                    ("3.1", "Etiquetas", "enc_etiquetas"),
-                    ("3.2", "Cartucheras", "enc_cartucheras"),
-                    ("3.4", "Cartas de Colores (Producto Nuevo o con cambios)", "enc_cartas_colores"),
-                    ("3.5", "Plastificado", "enc_plastificado_papeleria"),
-                    ("4", "Empaque", "enc_empaque"),
-                    ("4.1", "Cortado", "enc_cortado"),
-                    ("4.2", "Pegado", "enc_pegado")
+                    ("3.1", "Rótulos", "enc_rotulos"),
+                    ("3.2", "Certificados", "enc_certificados"),
+                    ("3.3", "Cartas de Colores (Producto Nuevo o con cambios)", "enc_cartas_colores"),
+                    ("3.4", "Remisión", "enc_remision"),
+                    ("4.1", "Contado", "enc_contado"),
+                    ("4.2", "Fajillado", "enc_fajillado")
                     ] %}
 
                     {% for n, desc, key in enc_items %}
+                    {% if n == "2.1" %}
+                    <tr class="section-row">
+                        <td class="col-num">2</td>
+                        <td class="col-desc">Revisar producto</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+                    {% endif %}
+                    {% if n == "3.1" %}
+                    <tr class="section-row">
+                        <td class="col-num">3</td>
+                        <td class="col-desc">Papelería</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+                    {% endif %}
+                    {% if n == "4.1" %}
+                    <tr class="section-row">
+                        <td class="col-num">4</td>
+                        <td class="col-desc">Empaque</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+                    {% endif %}
                     <tr>
                         <td class="col-num">{{ n }}</td>
                         <td class="col-desc">{{ desc }}</td>
@@ -667,14 +698,14 @@
         const form = document.getElementById('checklist-impresion');
         const opHidden = document.querySelector('input[name="op_no"]');
         const moduloHidden = document.getElementById('modulo-hidden');
-    
+
         const params = new URLSearchParams(window.location.search);
         const tareaQS = (params.get('tarea') || params.get('proceso') || "").trim();
         const modQS = (params.get('modulo') || "").toLowerCase().trim();
-    
+
         // ✅ usuario (para RESPONSABLE)
         const USUARIO = "{{ (usuario or '')|e }}".trim();
-    
+
         function norm(s) {
           return (s || "")
             .toUpperCase()
@@ -682,7 +713,7 @@
             .replace(/[\u0300-\u036f]/g, "")
             .trim();
         }
-    
+
         function moduloPorTarea(tarea) {
           const t = norm(tarea);
           if (t.includes("PAQUET")) return "paquete";
@@ -695,21 +726,21 @@
           if (t.includes("ENCUADER")) return "encuadernacion";
           return "";
         }
-    
+
         // ✅ Prioridad: modulo por URL -> modulo por tarea -> hidden -> default
         let activo = (modQS || moduloPorTarea(tareaQS) || (moduloHidden?.value || "") || "impresion")
           .toLowerCase()
           .trim();
-    
+
         if (moduloHidden) moduloHidden.value = activo;
-    
+
         // ✅ Mostrar SOLO el módulo activo y deshabilitar el resto
         document.querySelectorAll('tbody.module').forEach(tb => {
           const modulo = (tb.dataset.module || "").toLowerCase().trim();
           const isActive = (modulo === activo);
-    
+
           tb.classList.toggle('is-hidden', !isActive);
-    
+
           tb.querySelectorAll('input, select, textarea').forEach(el => {
             if (!isActive) {
               el.disabled = true;
@@ -718,7 +749,7 @@
               el.disabled = false;
             }
           });
-    
+
           // ✅ AUTORELLENO RESPONSABLE (solo en módulo activo)
           if (isActive) {
             tb.querySelectorAll('.responsable-field').forEach(inp => {
@@ -726,11 +757,11 @@
             });
           }
         });
-    
+
         // Guardar para volver al panel
         if (opHidden && opHidden.value) sessionStorage.setItem('opChecklist', opHidden.value);
         if (tareaQS) sessionStorage.setItem('tareaChecklist', tareaQS);
-    
+
         if (form) {
           form.addEventListener('submit', function () {
             const op2 = document.querySelector('input[name="op_no"]');
