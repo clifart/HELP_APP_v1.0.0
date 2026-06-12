@@ -39,6 +39,11 @@ def _base_dir() -> str:
     2) Desktop real del usuario
     3) Carpeta del .exe / app
     """
+    configured = os.environ.get("HELP_APP_DATA_DIR", "").strip()
+    if configured:
+        os.makedirs(configured, exist_ok=True)
+        return os.path.abspath(configured)
+
     d_desktop = r"D:\Desktop"
     if os.path.isdir(d_desktop):
         return d_desktop

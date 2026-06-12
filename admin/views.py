@@ -21,7 +21,7 @@ from datetime import datetime
 
 
 # ðŸ”‘ CLAVE ÃšNICA PARA TODO EL ADMIN
-CLAVE_TECNICA = "HELPAPP_2025"   # cÃ¡mbiala si quieres
+CLAVE_TECNICA = os.environ.get("HELP_APP_MASTER_KEY", "HELPAPP_2025")
 
 
 def _solo_admin():

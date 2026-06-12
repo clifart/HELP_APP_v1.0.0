@@ -74,9 +74,17 @@ def create_app():
         static_folder=_resource_path("static"),
     )
 
-    app.secret_key = "cambia-esta-clave-super-secreta"
-    app.config["MASTER_KEY"] = "HELPAPP_2025"
+    app.secret_key = os.environ.get(
+        "HELP_APP_SECRET_KEY",
+        "cambia-esta-clave-super-secreta",
+    )
+    app.config["MASTER_KEY"] = os.environ.get("HELP_APP_MASTER_KEY", "HELPAPP_2025")
     app.config.setdefault("DEBUG_AVISO_SEG", 0)
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["SESSION_COOKIE_SECURE"] = (
+        os.environ.get("HELP_APP_HTTPS", "0").strip() == "1"
+    )
 
     # =========================
     # ESQUEMA / BASE DE DATOS
@@ -86,6 +94,16 @@ def create_app():
         ejecutar_mantenimiento_mensual_historial()
     except Exception as e:
         print(f"[WARN] No se pudo ejecutar mantenimiento mensual de historial: {e}")
+
+    # =========================
+    # HILO DE AUTOCIERRE
+    # =========================
+    if os.environ.get("HELP_APP_ENABLE_AUTOCIERRE", "1").strip() == "1":
+        try:
+            from core.auto_cierre import iniciar_hilo_autocierre
+            iniciar_hilo_autocierre()
+        except Exception as e:
+            print(f"[WARN] No se pudo iniciar el hilo de autocierre: {e}")
 
     @app.before_request
     def _mantenimiento_historial_fin_mes():
@@ -197,6 +215,75 @@ def create_app():
         usuarios = conn.execute("SELECT nombre, rol FROM usuarios").fetchall()
         conn.close()
         return render_template("login.html", usuarios=usuarios)
+
+    @app.route("/cerrar_aplicacion_autocierre")
+    def cerrar_aplicacion_autocierre():
+        from flask import render_template_string, session, url_for
+
+        session.clear()
+        login_url = url_for("login")
+        return render_template_string(
+            """
+            <!doctype html>
+            <html lang="es">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>TrazOp - Cierre automatico</title>
+              <style>
+                body {
+                  margin: 0;
+                  min-height: 100vh;
+                  display: grid;
+                  place-items: center;
+                  font-family: Arial, sans-serif;
+                  background: linear-gradient(135deg, #5ec576, #45a29e);
+                  color: #173b35;
+                }
+                .box {
+                  width: min(420px, calc(100vw - 32px));
+                  background: #fff;
+                  border-radius: 12px;
+                  padding: 24px;
+                  text-align: center;
+                  box-shadow: 0 10px 25px rgba(0,0,0,.16);
+                }
+                h1 { margin: 0 0 10px; font-size: 22px; color: #056c4e; }
+                p { margin: 0 0 14px; line-height: 1.4; }
+                a {
+                  display: inline-block;
+                  margin-top: 4px;
+                  padding: 10px 16px;
+                  border-radius: 7px;
+                  background: #0f6a4f;
+                  color: #fff;
+                  text-decoration: none;
+                  font-weight: 700;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="box">
+                <h1>Cierre automatico</h1>
+                <p>Se cumplieron las 8 horas y no se inicio horario extendido.</p>
+                <p>TrazOp cerrara esta ventana. Si el navegador lo bloquea, vuelve al login.</p>
+                <a href="{{ login_url }}">Volver al login</a>
+              </div>
+              <script>
+                sessionStorage.clear();
+                setTimeout(() => {
+                  try { window.open("", "_self"); } catch (e) {}
+                  try { window.close(); } catch (e) {}
+                }, 450);
+                setTimeout(() => {
+                  if (!window.closed) window.location.replace("{{ login_url }}");
+                }, 1600);
+              </script>
+            </body>
+            </html>
+            """,
+            login_url=login_url,
+        )
 
         # =========================
     # CAMBIO DE CONTRASEÑA OBLIGATORIO (DESPUÉS DE RESET)
@@ -386,7 +473,7 @@ if __name__ == "__main__":
 
     ip = _ip_lan()
 
-    print("\nHELP_APP en red local (SIN internet):")
+    print("\nTrazOp en red local (SIN internet):")
     print(f"  PC:      http://127.0.0.1:{puerto}")
     print(f"  Tablet:  http://{ip}:{puerto}\n")
 

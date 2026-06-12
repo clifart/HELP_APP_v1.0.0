@@ -2,6 +2,7 @@
 import os
 import sys
 import sqlite3
+import shutil
 from pathlib import Path
 from contextlib import closing
 
@@ -18,14 +19,28 @@ def _base_dir() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
-BASE_DIR = _base_dir()
-DB_PATH = BASE_DIR / "database.db"
+APP_DIR = _base_dir()
+DATA_DIR = Path(os.environ.get("HELP_APP_DATA_DIR", str(APP_DIR))).expanduser().resolve()
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = DATA_DIR / "database.db"
+
+
+def _initialize_persistent_database():
+    source_db = APP_DIR / "database.db"
+    if DB_PATH == source_db or DB_PATH.exists() or not source_db.exists():
+        return
+    shutil.copy2(source_db, DB_PATH)
+
+
+_initialize_persistent_database()
 
 
 def get_db_connection():
     """Devuelve una conexión sqlite3 con row_factory=Row."""
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    conn = sqlite3.connect(str(DB_PATH), timeout=30, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout=30000;")
     return conn
 
 

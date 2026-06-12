@@ -1,0 +1,252 @@
+{# templates/usuario/checklist_varios.html #}
+{% extends "base.html" %}
+{% block content %}
+<div class="container checklist-varios-container">
+    <form id="checklist-varios" method="post" action="">
+        <input type="hidden" name="id" value="{{ tarea_id or '' }}">
+        <input type="hidden" name="op_no" value="{{ op_no or '' }}">
+        <input type="hidden" name="modulo" value="{{ (modulo_activo or 'varios')|lower }}">
+
+        <section class="checklist-varios-card">
+            <h3>CHECKLIST: VARIOS</h3>
+
+            <label class="varios-line-field">
+                <span>RESPONSABLE:</span>
+                <input type="text" name="responsable_varios" value="{{ usuario or '' }}" readonly spellcheck="false">
+            </label>
+
+            <label class="varios-observaciones">
+                <span>OBSERVACIONES:</span>
+                <textarea name="observaciones_varios" rows="6" spellcheck="false" required
+                    data-required-msg="Debes llenar las observaciones para guardar el checklist."></textarea>
+            </label>
+
+            <div class="varios-footer">
+                <div class="varios-meta">
+                    <div class="varios-op"><strong>OP No.</strong> {{ op_no or 'SIN OP' }}</div>
+                    <label class="varios-fecha">
+                        <span>FECHA:</span>
+                        <input type="date" name="fecha_varios" required>
+                    </label>
+                </div>
+                <button type="submit" class="btn-guardar-checklist">Guardar checklist</button>
+            </div>
+        </section>
+    </form>
+</div>
+
+<style>
+    .checklist-varios-container {
+        max-width: 760px;
+        margin-top: 28px;
+    }
+
+    #checklist-varios {
+        margin: 0;
+        display: block;
+        width: 100%;
+        max-width: none;
+    }
+
+    .checklist-varios-card {
+        width: 100%;
+        box-sizing: border-box;
+        background: #fff;
+        border: 2px solid #3b3b3b;
+        border-radius: 8px;
+        padding: 18px 24px 14px;
+        color: #111;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .checklist-varios-card h3 {
+        margin: 0 0 24px;
+        text-align: center;
+        color: #0f6a4f;
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+    }
+
+    .varios-line-field,
+    .varios-observaciones {
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    .varios-line-field span,
+    .varios-observaciones span {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .varios-line-field input {
+        width: 100%;
+        box-sizing: border-box;
+        border: 0;
+        border-bottom: 1px solid #555;
+        border-radius: 0;
+        outline: none;
+        padding: 2px 4px;
+        background: transparent;
+        color: #111;
+        font-size: 14px;
+    }
+
+    .varios-observaciones textarea {
+        width: 100%;
+        min-height: 150px;
+        box-sizing: border-box;
+        resize: vertical;
+        border: 1px solid #555;
+        border-radius: 6px;
+        padding: 10px;
+        outline: none;
+        color: #111;
+        font-size: 14px;
+    }
+
+    .varios-observaciones textarea:focus,
+    .varios-line-field input:focus {
+        border-color: #0f6a4f;
+        box-shadow: 0 0 0 2px rgba(15,106,79,0.12);
+    }
+
+    .varios-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: 8px;
+    }
+
+    .varios-meta {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        min-width: 0;
+    }
+
+    .varios-op {
+        font-size: 12px;
+        color: #111;
+        white-space: nowrap;
+    }
+
+    .varios-fecha {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        font-size: 12px;
+        font-weight: 800;
+        color: #111;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .varios-fecha input {
+        width: 138px;
+        border: 0;
+        border-bottom: 1px solid #555;
+        border-radius: 0;
+        padding: 2px 4px;
+        background: transparent;
+        color: #111;
+        font-size: 13px;
+        outline: none;
+    }
+
+    .btn-guardar-checklist {
+        background-color: #0f6a4f;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        cursor: pointer;
+    }
+
+    .btn-guardar-checklist:hover {
+        background-color: #198754;
+    }
+
+    @media (max-width: 576px) {
+        .checklist-varios-container {
+            margin-top: 16px;
+            padding: 0 10px;
+        }
+
+        .checklist-varios-card {
+            padding: 16px 14px 14px;
+        }
+
+        .varios-footer {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .varios-meta {
+            align-items: stretch;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .varios-fecha {
+            justify-content: space-between;
+        }
+
+        .varios-fecha input {
+            width: 170px;
+            max-width: 60%;
+        }
+
+        .btn-guardar-checklist {
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('checklist-varios');
+        const observaciones = document.querySelector('#checklist-varios textarea[name="observaciones_varios"]');
+        const fecha = document.querySelector('#checklist-varios input[name="fecha_varios"]');
+        const opHidden = document.querySelector('#checklist-varios input[name="op_no"]');
+        const params = new URLSearchParams(window.location.search);
+        const tareaQS = (params.get('tarea') || params.get('proceso') || "").trim();
+        if (opHidden && opHidden.value) sessionStorage.setItem('opChecklist', opHidden.value);
+        if (tareaQS) sessionStorage.setItem('tareaChecklist', tareaQS);
+        if (fecha && !fecha.value) {
+            const hoy = new Date();
+            const yyyy = hoy.getFullYear();
+            const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+            const dd = String(hoy.getDate()).padStart(2, '0');
+            fecha.value = `${yyyy}-${mm}-${dd}`;
+        }
+        if (observaciones) {
+            observaciones.addEventListener('invalid', function () {
+                this.setCustomValidity(this.dataset.requiredMsg || 'Debes llenar este campo.');
+            });
+            observaciones.addEventListener('input', function () {
+                this.setCustomValidity('');
+            });
+        }
+        if (form && observaciones) {
+            form.addEventListener('submit', function (ev) {
+                if (!observaciones.value.trim()) {
+                    observaciones.setCustomValidity(observaciones.dataset.requiredMsg || 'Debes llenar este campo.');
+                    observaciones.reportValidity();
+                    ev.preventDefault();
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

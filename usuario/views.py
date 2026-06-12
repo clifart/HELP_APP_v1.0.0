@@ -7,6 +7,7 @@ from core.horarios import (
     esta_en_ventana,
     ultima_fin_ventana,
 )
+from core.autocierre_config import AUTO_CIERRE_GRACIA_SEG, AUTO_CIERRE_LIMITE_SEG
 from core.horas_extras import calcular_tiempo_total_y_horas_extras
 from core.registro_diario import registrar_tarea_diaria
 from core import now_iso
@@ -25,6 +26,10 @@ def _solo_usuario():
     return rol == "admin" and session.get("clave_tecnica") == current_app.config.get("MASTER_KEY")
 
 
+def _modo_tecnico_activo() -> bool:
+    return session.get("clave_tecnica") == current_app.config.get("MASTER_KEY")
+
+
 def _debug_aviso_seg_activo() -> int:
     try:
         return int(session.get("debug_aviso_seg") or 0)
@@ -32,8 +37,33 @@ def _debug_aviso_seg_activo() -> int:
         return 0
 
 
+def _debug_autocierre_activo() -> bool:
+    return bool(session.get("debug_autocierre_activo"))
+
+
 def _desactivar_debug_aviso():
+    session.pop("debug_autocierre_activo", None)
     session.pop("debug_aviso_seg", None)
+
+
+@usuario_bp.route("/probar_autocierre", methods=["GET", "POST"])
+def probar_autocierre():
+    if not _modo_tecnico_activo():
+        flash("Acceso no autorizado.", "danger")
+        return redirect(url_for("login"))
+    try:
+        seg = int(request.values.get("seg") or 0)
+    except Exception:
+        seg = 0
+    seg = max(0, min(seg, 3600))
+    session["debug_autocierre_activo"] = 1
+    session["debug_aviso_seg"] = seg
+    flash(
+        f"Modo prueba de autocierre activo: el aviso aparecerá a los {seg} segundos "
+        "y luego tendrá 60 segundos para iniciar horas extras.",
+        "warning",
+    )
+    return redirect(url_for("usuario.panel"))
 
 
 # -------------------------
@@ -76,6 +106,14 @@ def _omite_checklist_y_cantidad(nombre: str) -> bool:
     """
     norm = _normalizar_proceso(nombre)
     return norm in {"ALISTAMIENTO", "DESCARTONE", "REPROCESO"}
+
+
+def _omite_cantidad(nombre: str) -> bool:
+    """
+    Procesos que no manejan cantidad, aunque algunos sí requieren checklist.
+    """
+    norm = _normalizar_proceso(nombre)
+    return _omite_checklist_y_cantidad(nombre) or norm == "VARIOS"
 
 
 def _es_impresion(nombre: str) -> bool:
@@ -456,7 +494,8 @@ def panel():
             fin,
             cantidad,
             estado,
-            COALESCE(horario_extendido, 0) AS horario_extendido
+            COALESCE(horario_extendido, 0) AS horario_extendido,
+            COALESCE(pausa_acum, 0) AS pausa_acum
         FROM tareas
         WHERE estado != 'Finalizado'
           AND asignado_a = ?
@@ -476,10 +515,23 @@ def panel():
         cantidad = (t[6] if isinstance(t, tuple) else t["cantidad"]) or 0
         estado = (t[7] if isinstance(t, tuple) else t["estado"]) or ""
         horario_extendido = (t[8] if isinstance(t, tuple) else t["horario_extendido"]) or 0
+        pausa_acum_db = int((t[9] if isinstance(t, tuple) else t["pausa_acum"]) or 0)
 
         modulo = _modulo_por_proceso(tarea) or "general"
         omite_ctrl = _omite_checklist_y_cantidad(tarea)
+        omite_cant = _omite_cantidad(tarea)
         ok_chk = True if omite_ctrl else _existe_checklist_modulo(cur, usuario, op.strip(), modulo, tarea_id=tid)
+
+        # Cálculo de tiempo real para el frontend (transcurrir el tiempo)
+        seg_trans_neto = 0
+        if estado == "En curso":
+            try:
+                dt_ini = datetime.fromisoformat(str(inicio).replace("Z", ""))
+                trno = inferir_turno(dt_ini)
+                seg_trans_bruto = segundos_laborales_transcurridos(dt_ini, datetime.now(), trno)
+                seg_trans_neto = max(0, seg_trans_bruto - pausa_acum_db)
+            except Exception:
+                pass
 
         tareas_list.append({
             "id": tid,
@@ -494,6 +546,9 @@ def panel():
             "modulo": modulo,
             "checklist_ok": bool(ok_chk),
             "omite_controles": bool(omite_ctrl),
+            "omite_cantidad": bool(omite_cant),
+            "segundos_transcurridos": seg_trans_neto,
+            "pausa_acum": pausa_acum_db,
         })
 
     tareas = tareas_list
@@ -519,6 +574,7 @@ def panel():
     ops = [{"titulo": r[0], "descripcion": r[1]} for r in rows]
     ops_map = {o["titulo"]: o["descripcion"] for o in ops}
     debug_aviso_seg = _debug_aviso_seg_activo()
+    debug_autocierre_activo = _debug_autocierre_activo()
 
     return render_template(
         "usuario/panel.html",
@@ -526,7 +582,10 @@ def panel():
         ops=ops,
         ops_map=ops_map,
         op_preseleccionada=op_preseleccionada,
-        debug_aviso_seg=debug_aviso_seg
+        debug_aviso_seg=debug_aviso_seg,
+        debug_autocierre_activo=debug_autocierre_activo,
+        autocierre_limite_seg=AUTO_CIERRE_LIMITE_SEG,
+        autocierre_gracia_seg=AUTO_CIERRE_GRACIA_SEG
     )
 
 
@@ -709,8 +768,9 @@ def finalizar_tarea_usuario():
     descripcion = descripcion or str(desc_db).strip()
     tarea = tarea or str(tarea_db).strip()
     omite_ctrl = _omite_checklist_y_cantidad(tarea)
+    omite_cant = _omite_cantidad(tarea)
 
-    if omite_ctrl:
+    if omite_cant:
         cantidad = 0
     else:
         if not cantidad_raw.isdigit():
@@ -892,7 +952,7 @@ def finalizar_tarea_usuario():
         except Exception as e:
             print(f"⚠️ No se pudo registrar en el diario (Excel): {e}")
 
-    if _debug_aviso_seg_activo() > 0:
+    if _debug_autocierre_activo():
         _desactivar_debug_aviso()
 
     return jsonify({"ok": True, "tiempo_total": tiempo_total, "horas_extras": horas_extras}), 200
@@ -909,6 +969,7 @@ def extender_horario_tarea():
     data = request.get_json(silent=True) or {}
     tarea_id = data.get("id")
     force_test = int(data.get("force_test") or 0)
+    force_test = 1 if (force_test and _debug_autocierre_activo()) else 0
     try:
         tarea_id = int(tarea_id)
     except Exception:
@@ -939,7 +1000,7 @@ def extender_horario_tarea():
 
     if ext_db == 1:
         conn.close()
-        if _debug_aviso_seg_activo() > 0:
+        if _debug_autocierre_activo():
             _desactivar_debug_aviso()
         return jsonify({"ok": True, "already": True}), 200
 
@@ -957,7 +1018,7 @@ def extender_horario_tarea():
         return jsonify({"ok": False, "msg": "Error BD"}), 500
 
     conn.close()
-    if _debug_aviso_seg_activo() > 0:
+    if _debug_autocierre_activo():
         _desactivar_debug_aviso()
     return jsonify({"ok": True}), 200
 
@@ -969,11 +1030,11 @@ def extender_horario_tarea():
 def autocerrar_tarea_usuario():
     if not _solo_usuario():
         return jsonify({"ok": False, "msg": "No autorizado"}), 403
-    return jsonify({"ok": False, "msg": "Autocierre desactivado."}), 400
 
     data = request.get_json(silent=True) or {}
     tarea_id = data.get("id")
     force_test = int(data.get("force_test") or 0)
+    force_test = 1 if (force_test and _debug_autocierre_activo()) else 0
     try:
         tarea_id = int(tarea_id)
     except Exception:
@@ -1034,9 +1095,9 @@ def autocerrar_tarea_usuario():
         elapsed = int(elapsed) - int(pausa_acum_db or 0)
         elapsed = max(0, elapsed)
         fuera_turno = not esta_en_ventana(dt_fin, turno)
-        if (elapsed < 8 * 3600) and (not fuera_turno) and (not force_test):
+        if (elapsed < AUTO_CIERRE_LIMITE_SEG) and (not fuera_turno) and (not force_test):
             conn.close()
-            return jsonify({"ok": False, "msg": "Aún no supera 8 horas laborables y está dentro del turno."}), 400
+            return jsonify({"ok": False, "msg": "La tarea requiere 8 horas de actividad para autocierre."}), 400
         if fuera_turno and (not force_test):
             fin_corte = ultima_fin_ventana(dt_fin, turno)
             if fin_corte and fin_corte > dt_inicio:
@@ -1149,7 +1210,7 @@ def autocerrar_tarea_usuario():
         except Exception as e:
             print(f"⚠️ No se pudo registrar en el diario (Excel) [autocierre]: {e}")
 
-    if _debug_aviso_seg_activo() > 0:
+    if _debug_autocierre_activo():
         _desactivar_debug_aviso()
 
     return jsonify({"ok": True, "tiempo_total": tiempo_total, "horas_extras": horas_extras}), 200
@@ -1475,6 +1536,10 @@ def checklist_impresion():
                 return redirect(url_for("usuario.panel"))
         except Exception:
             pass
+        if modulo == "varios" and not (request.form.get("observaciones_varios") or "").strip():
+            conn.close()
+            flash("⚠️ Debes llenar las observaciones para guardar el checklist.", "warning")
+            return redirect(request.url)
         fecha = now_iso()
 
         data_dict = request.form.to_dict(flat=True)
@@ -1520,6 +1585,8 @@ def checklist_impresion():
         template_name = "usuario/checklist_mantenimiento_sormz_sorm_barnizado.html"
     if modulo_activo == "pegue" or ("pegue" in modulo_activo):
         template_name = "usuario/checklist_pegue_cajas.html"
+    if modulo_activo == "varios":
+        template_name = "usuario/checklist_varios.html"
     try:
         return render_template(
             template_name,

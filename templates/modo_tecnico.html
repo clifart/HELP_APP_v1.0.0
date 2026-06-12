@@ -1,14 +1,14 @@
 ﻿{% extends "base.html" %}
 {% block content %}
 
-<div class="container mt-4">
+<div class="container mt-4 modo-tecnico-page">
 
   <!-- WRAPPER CENTRADO (NO CAMBIA FUNCIONALIDAD) -->
   <div class="modo-tecnico-wrap">
 
     <!-- ENCABEZADO -->
-    <div class="panel-header text-center mb-4">
-      <h2>MODO TECNICO - HELP_APP</h2>
+    <div class="panel-header">
+      <h2>MODO TECNICO - TrazOp</h2>
       <p>Acceso autorizado para mantenimiento y diagnostico interno.</p>
     </div>
 
@@ -19,16 +19,26 @@
       <!-- ACCION: LIMPIAR HISTORIAL (DEMO) -->
       <div class="accion-tech">
         <form id="form-limpiar-historial" action="{{ url_for('admin.limpiar_historial') }}" method="POST"
-          class="text-center mb-0">
+          class="modo-tech-action-form">
           <input type="hidden" name="clave_tecnica" value="{{ session.get('clave_tecnica', '') }}">
-          <button type="button" id="btn-limpiar-historial" class="btn btn-warning btn-lg btn-tech">
+          <button type="button" id="btn-limpiar-historial" class="modo-tech-btn modo-tech-btn--warning btn-tech">
             Limpiar historial (Demo)
           </button>
         </form>
 
-        <div class="accion-descripcion text-muted">
-          Solo para dejar HELP_APP limpio para demostraciones. No elimina usuarios ni OP activas.
-        </div>
+        <p class="accion-descripcion">
+          Solo para dejar TrazOp limpio para demostraciones. No elimina usuarios ni OP activas.
+        </p>
+      </div>
+
+      <div class="accion-tech">
+        <a href="{{ url_for('usuario.probar_autocierre') }}?seg=0"
+          class="modo-tech-btn modo-tech-btn--success btn-tech btn-autocierre-test">
+          Probar autocierre 60s
+        </a>
+        <p class="accion-descripcion">
+          Activa una prueba controlada en el panel de usuario. No cambia el autocierre real de 8 horas.
+        </p>
       </div>
 
     </div>
@@ -60,8 +70,8 @@
     </div>
 
     <!-- SECCION USUARIOS -->
-    <div class="card shadow-sm p-3 mt-4">
-      <h4 class="mb-3 text-success">Usuarios Registrados</h4>
+    <div class="modo-tech-panel modo-tech-panel--usuarios">
+      <h4>Usuarios Registrados</h4>
 
       {% if usuarios and usuarios|length > 0 %}
       <div class="modo-tech-usuarios">
@@ -119,41 +129,117 @@
     </div>
 
     <!-- BOTON VOLVER (FUERA DEL RECTANGULO) -->
-    <div class="text-center mt-5 mb-2" style="margin-top: 40px;">
-      <a href="{{ url_for('admin.panel') }}" class="btn btn-secondary">Volver al Panel de Administracion</a>
+    <div class="modo-tech-footer">
+      <a href="{{ url_for('admin.panel') }}" class="modo-tech-btn modo-tech-btn--back">Volver al Panel de Administracion</a>
     </div>
 
   </div>
 </div>
 
 <style>
+  .container.modo-tecnico-page {
+    width: min(92vw, 920px);
+    max-width: 920px;
+    padding: 30px 34px;
+    box-sizing: border-box;
+  }
+
   /* 1) CENTRAR TODO EL MODO TECNICO SIN CAMBIAR DISENO BASE */
   .modo-tecnico-wrap {
-    max-width: 980px;
-    /* ajusta a tu gusto: 900-1100 */
+    width: min(100%, 760px);
     margin: 0 auto;
-    /* centra */
+  }
+
+  .panel-header {
+    text-align: center;
+    margin-bottom: 20px;
   }
 
   /* 2) ACCIONES: que queden centradas y ordenadas */
   .modo-tecnico-acciones {
-    display: flex;
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 20px auto 26px;
+    width: 100%;
+  }
+
+  .accion-tech {
+    width: 100%;
+    display: flex !important;
     flex-direction: column;
     align-items: center;
-    /* centra botones y textos */
-    gap: 10px;
-    margin-bottom: 10px;
+    justify-content: flex-start;
+    gap: 9px;
+    text-align: center;
+    padding: 0;
+    box-sizing: border-box;
   }
 
-  .modo-tecnico-acciones form {
+  .modo-tech-action-form {
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
     width: 100%;
+    margin: 0 !important;
+    padding: 0;
+    gap: 0;
   }
 
-  /* para que los botones no queden demasiado anchos en PC */
-  .modo-tecnico-acciones .btn-lg {
-    min-width: 280px;
-    max-width: 360px;
+  .accion-descripcion {
     width: 100%;
+    max-width: 690px;
+    margin: 0 auto !important;
+    color: #303030;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    text-align: center;
+  }
+
+  .modo-tech-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px !important;
+    width: min(100%, 360px) !important;
+    border: 0 !important;
+    border-radius: 7px !important;
+    box-sizing: border-box;
+    padding: 10px 18px !important;
+    color: #fff !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none !important;
+    white-space: normal;
+    cursor: pointer;
+  }
+
+  .modo-tech-btn--warning {
+    background: #43a047 !important;
+  }
+
+  .modo-tech-btn--warning:hover {
+    background: #388e3c !important;
+  }
+
+  .modo-tech-btn--success {
+    background: #00664f !important;
+  }
+
+  .modo-tech-btn--success:hover {
+    background: #004f3d !important;
+  }
+
+  .modo-tech-btn--back {
+    width: auto !important;
+    min-width: 260px;
+    background: #43a047 !important;
+  }
+
+  .modo-tech-btn--back:hover {
+    background: #388e3c !important;
   }
 
   /* (tu estilo original, sin cambios de logica) */
@@ -162,16 +248,27 @@
     font-weight: 700;
   }
 
-  .card {
-    border-radius: 12px;
+  .panel-header p {
+    margin: 0;
+  }
+
+  .modo-tech-panel {
+    margin-top: 22px;
+    border: 1px solid #dce8dc;
+    border-radius: 10px;
     background: #f9fff8;
+    padding: 16px 18px;
+    box-sizing: border-box;
+  }
+
+  .modo-tech-panel h4 {
+    margin: 0 0 14px;
+    color: #15614f;
+    font-size: 1rem;
+    font-weight: 700;
   }
 
   .modo-tech-usuarios {
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    padding: 10px;
-    background: #fbfffb;
     --mt-control-height: 38px;
   }
 
@@ -182,48 +279,70 @@
   }
 
   .modo-tech-usuarios__row {
-    display: flex;
-    align-items: flex-end;
-    gap: 10px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr);
+    align-items: end;
+    gap: 12px;
   }
 
   .modo-tech-usuarios__control {
-    flex: 1;
-    min-width: 460px;
+    min-width: 0;
   }
 
   .modo-tech-usuarios__control .form-select {
-    width: 100%;
-    max-width: none;
-    height: var(--mt-control-height);
+    display: block;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: var(--mt-control-height) !important;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    font-size: 0.95rem;
   }
 
   .modo-tech-usuarios__actions {
-    margin-left: auto;
-    display: flex;
-    align-items: flex-end;
-    gap: 6px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(112px, 1fr));
+    align-items: center;
+    justify-content: stretch;
+    gap: 8px;
+    width: 100%;
   }
 
   .modo-tech-usuarios__actions form {
-    margin: 0;
+    display: block !important;
+    width: 100%;
+    margin: 0 !important;
   }
 
   .modo-tech-usuarios__actions .btn {
-    height: var(--mt-control-height);
-    padding-top: 6px;
-    padding-bottom: 6px;
+    width: 100% !important;
+    height: var(--mt-control-height) !important;
+    min-width: 0 !important;
+    padding: 7px 10px !important;
+    box-sizing: border-box;
+    font-size: 0.9rem;
+    white-space: nowrap;
   }
 
   .modo-tech-usuarios__meta {
-    margin-top: 10px;
+    margin-top: 12px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 6px 12px;
     font-size: 0.9rem;
     color: #333;
+  }
+
+  .modo-tech-footer {
+    display: flex;
+    justify-content: center;
+    margin: 28px 0 2px;
+  }
+
+  .modo-tech-footer .btn {
+    text-align: center;
+    text-decoration: none;
   }
 
   .test-row {
@@ -296,16 +415,18 @@
     gap: 6px;
   }
 
-  @media (max-width: 576px) {
+  @media (max-width: 720px) {
+    .container.modo-tecnico-page {
+      width: calc(100% - 24px);
+      padding: 18px 14px 20px;
+    }
+
     .modo-tech-usuarios__row {
-      flex-direction: column;
-      align-items: stretch;
+      grid-template-columns: 1fr;
     }
 
     .modo-tech-usuarios__actions {
-      margin-left: 0;
-      display: flex;
-      justify-content: flex-end;
+      grid-template-columns: 1fr;
     }
 
     .toast-limpiar-oculto {

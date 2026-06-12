@@ -10,6 +10,7 @@ from core.horarios import (
     esta_en_ventana,
     ultima_fin_ventana,
 )
+from core.autocierre_config import AUTO_CIERRE_TOTAL_HORAS
 from core.horas_extras import calcular_tiempo_total_y_horas_extras
 
 try:
@@ -95,10 +96,11 @@ def _segundos_a_hms(total_seg):
     return f"{horas:02d}:{minutos:02d}:{segundos:02d}"
 
 
-def ejecutar_autocierre(limite_horas=8, max_batch=200):
+def ejecutar_autocierre(limite_horas=AUTO_CIERRE_TOTAL_HORAS, max_batch=200):
     """
     Autocierra tareas 'En curso' con inicio >= limite_horas (descontando pausa_acum),
     cuando NO están en horario extendido.
+    Se añaden 1 minuto (1/60h) de gracia para el aviso al operario.
     """
     conn = get_db_connection()
     cur = conn.cursor()
@@ -269,16 +271,19 @@ def ejecutar_autocierre(limite_horas=8, max_batch=200):
     return cerradas
 
 
-def _loop_autocierre(intervalo_seg=60):
+def _loop_autocierre(intervalo_seg=10):
     while True:
         try:
-            ejecutar_autocierre()
+            n = ejecutar_autocierre()
+            if n > 0:
+                print(f"[AUTOCIERRE] {n} tareas cerradas automáticamente.")
         except Exception as e:
             print(f"⚠️ Error loop autocierre: {e}")
-        time.sleep(max(5, int(intervalo_seg or 60)))
+        time.sleep(max(5, int(intervalo_seg or 10)))
 
 
-def iniciar_hilo_autocierre(intervalo_seg=60):
+def iniciar_hilo_autocierre(intervalo_seg=10):
+    print(f"[SISTEMA] Hilo de autocierre iniciado (cada {intervalo_seg}s)")
     t = threading.Thread(
         target=_loop_autocierre,
         args=(intervalo_seg,),

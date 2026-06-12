@@ -1,8 +1,13 @@
 import argparse
 import shutil
+import sys
 from pathlib import Path
 from datetime import datetime, timedelta
 import sqlite3
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 import core.db as db
 
@@ -100,6 +105,11 @@ def main():
     cur = conn.cursor()
     ensure_tareas_columns(conn)
 
+    # Asegurar que el historial tenga las columnas necesarias para el test
+    from usuario.views import _asegurar_cols_historial
+    _asegurar_cols_historial(cur)
+    conn.commit()
+
     cur.execute(
         """
         INSERT INTO tareas (titulo, descripcion, proceso, asignado_a, inicio, estado, cantidad, horario_extendido)
@@ -126,6 +136,7 @@ def main():
     conn.close()
 
     cerradas = ac.ejecutar_autocierre()
+    print(f"--- Ejecutando autocierre... Resultado: {cerradas} tareas cerradas ---")
 
     conn = sqlite3.connect(str(dst))
     cur = conn.cursor()

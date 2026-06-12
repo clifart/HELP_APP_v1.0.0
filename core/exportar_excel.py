@@ -89,7 +89,7 @@ def exportar_excel_automatico(conn):
     Exporta la BD a:
       EXPORT_EXCEL_AUTO/AAAA-MM-DD/*.xlsx
     """
-    base_dir = current_app.root_path
+    base_dir = os.environ.get("HELP_APP_DATA_DIR", "").strip() or current_app.root_path
 
     carpeta_base = os.path.join(base_dir, "EXPORT_EXCEL_AUTO")
     os.makedirs(carpeta_base, exist_ok=True)
