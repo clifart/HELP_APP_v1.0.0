@@ -6,9 +6,9 @@ PythonAnywhere. El plan F1 de Azure esta destinado a desarrollo y pruebas.
 ## Recursos
 
 - App Service: Linux, Python 3.11, plan Free F1.
-- Codigo: repositorio privado de GitHub.
-- Datos: `/home/data/trazop-pruebas`.
-- Inicio: `bash deploy/azure/startup.sh`.
+- Codigo: despliegue directo con Azure CLI.
+- Datos: `/home/data/trazop-pruebas-v1`.
+- Inicio: Gunicorn configurado directamente en App Service.
 
 El directorio `/home` es persistente entre reinicios. No guardar la base de
 datos dentro de `/home/site/wwwroot`, porque una publicacion puede reemplazar
@@ -41,36 +41,70 @@ SCM_DO_BUILD_DURING_DEPLOYMENT=true
 
 No publicar los valores de las claves en GitHub.
 
-En `Settings` > `Configuration` > `Startup Command`, usar:
+En `Settings` > `Stack settings` > `Startup Command`, usar:
 
 ```text
-bash deploy/azure/startup.sh
+gunicorn --bind=0.0.0.0:8000 --workers 1 --threads 4 --timeout 120 --access-logfile - --error-logfile - wsgi:app
 ```
 
-## Conectar GitHub
+## Publicar el codigo
 
-1. Abrir `Deployment Center`.
-2. Elegir `GitHub`.
-3. Autorizar la cuenta y seleccionar:
-   - Organization: la cuenta propietaria.
-   - Repository: `HELP_APP_v1.0.0`.
-   - Branch: `main`.
-4. Guardar y esperar a que termine la primera publicacion.
+GitHub Actions puede quedar bloqueado por la configuracion de facturacion de
+GitHub, incluso cuando Azure usa el plan gratuito. El despliegue directo evita
+esa dependencia.
+
+Desde PowerShell, con Azure CLI instalado:
+
+```powershell
+az login --use-device-code
+git archive --format=zip --output="$env:TEMP\trazop-azure.zip" HEAD
+az webapp deploy `
+  --resource-group trazop-pruebas-rg `
+  --name trazop-pruebas-2026 `
+  --src-path "$env:TEMP\trazop-azure.zip" `
+  --type zip `
+  --clean true `
+  --restart true `
+  --timeout 900000
+```
 
 ## Base de datos de pruebas
 
-La base nunca se sube al repositorio. Se copia de forma privada a:
+La base nunca se sube al repositorio. Se copia de forma privada a una carpeta
+versionada, por ejemplo:
 
 ```text
-/home/data/trazop-pruebas/database.db
+/home/data/trazop-pruebas-v1/database.db
 ```
 
 Antes de reemplazarla:
 
-1. Detener temporalmente la Web App.
-2. Guardar una copia de seguridad de la base remota.
-3. Transferir una copia de `database.db`, no la base de produccion.
-4. Iniciar la Web App.
+1. Crear una copia consistente de `database.db`.
+2. Transferirla con `--type static`, `--clean false` y una ruta nueva.
+3. Cambiar `HELP_APP_DATA_DIR` a la carpeta nueva.
+4. Reiniciar la Web App y verificar el ingreso.
+
+Ejemplo:
+
+```powershell
+az webapp deploy `
+  --resource-group trazop-pruebas-rg `
+  --name trazop-pruebas-2026 `
+  --src-path "$env:TEMP\trazop-pruebas-database.db" `
+  --type static `
+  --target-path /home/data/trazop-pruebas-v2/database.db `
+  --clean false `
+  --restart false
+
+az webapp config appsettings set `
+  --resource-group trazop-pruebas-rg `
+  --name trazop-pruebas-2026 `
+  --settings HELP_APP_DATA_DIR=/home/data/trazop-pruebas-v2
+
+az webapp restart `
+  --resource-group trazop-pruebas-rg `
+  --name trazop-pruebas-2026
+```
 
 ## APK
 
