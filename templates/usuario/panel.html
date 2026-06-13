@@ -384,28 +384,6 @@
         return (HORARIOS[t] && HORARIOS[t][dow]) ? HORARIOS[t][dow] : [];
     }
 
-    function _estaEnVentana(dateObj, turno) {
-        const dow = _dowLunes0(dateObj);
-        const min = dateObj.getHours() * 60 + dateObj.getMinutes();
-        for (const [ini, fin] of _ventanasDia(dow, turno))
-            if (ini <= min && min < fin) return true;
-        return false;
-    }
-
-    function _finVentanaActual(dateObj, turno) {
-        const dow = _dowLunes0(dateObj);
-        const min = dateObj.getHours() * 60 + dateObj.getMinutes();
-        for (const [ini, fin] of _ventanasDia(dow, turno)) {
-            if (ini <= min && min < fin) {
-                if (fin === 1440)
-                    return new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()+1, 0,0,0,0);
-                return new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(),
-                                Math.floor(fin/60), fin%60, 0, 0);
-            }
-        }
-        return null;
-    }
-
     function _inferirTurno(inicioDate) {
         if (!inicioDate) return "diurno";
         const dow = _dowLunes0(inicioDate);
@@ -448,14 +426,9 @@
     function _msHastaLimite(inicio, ahora, turno, segYaTranscurridos) {
         const restanteSeg = LIMITE_SEG - (segYaTranscurridos || 0);
         if (restanteSeg <= 0) return 0;
-        if (!_estaEnVentana(ahora, turno)) return 0;
-        const finVentana = _finVentanaActual(ahora, turno);
-        if (!finVentana) return 0;
         const target = _sumarLaboralDesde(ahora, restanteSeg, turno);
         if (!target) return null;
-        const msHasta = Math.max(0, target.getTime() - ahora.getTime());
-        const msFin   = Math.max(0, finVentana.getTime() - ahora.getTime());
-        return Math.min(msHasta, msFin);
+        return Math.max(0, target.getTime() - ahora.getTime());
     }
 
     function _parseFechaHora(raw) {
@@ -494,14 +467,11 @@
         avisoActivo = fila;
         const op    = (fila.dataset.op    || "").trim();
         const tarea = (fila.dataset.tarea || "").trim();
-        const inicio     = _parseFechaHora(fila.dataset.inicio || "");
-        const turno      = _inferirTurno(inicio);
-        const fueraTurno = !_estaEnVentana(new Date(), turno);
         if (avisoMsg) {
             const etiqueta = [tarea ? `Tarea: ${tarea}` : "", op ? `OP: ${op}` : ""].filter(Boolean).join(" | ");
             const base = MODO_PRUEBA_AUTOCIERRE
                 ? "Prueba de autocierre activa."
-                : (fueraTurno ? "Esta tarea salió del rango de turno." : "Esta tarea superó las 8 horas en curso.");
+                : "Esta tarea superó las 8 horas efectivas en curso.";
             avisoMsg.textContent = etiqueta ? `${base} ${etiqueta}` : base;
         }
         let restante = Math.ceil(AVISO_MS / 1000);

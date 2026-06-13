@@ -4,8 +4,6 @@ from core.db import get_db_connection, ensure_tareas_columns
 from core.horarios import (
     segundos_laborales_transcurridos,
     inferir_turno,
-    esta_en_ventana,
-    ultima_fin_ventana,
 )
 from core.autocierre_config import AUTO_CIERRE_GRACIA_SEG, AUTO_CIERRE_LIMITE_SEG
 from core.horas_extras import calcular_tiempo_total_y_horas_extras
@@ -1086,7 +1084,7 @@ def autocerrar_tarea_usuario():
     inicio = str(inicio_db).strip() if inicio_db else ahora_iso
     fin = ahora_iso
 
-    # ✅ Validar 8 horas laborables según turno (o fuera de turno)
+    # Validar 8 horas laborables segun turno.
     try:
         dt_inicio = datetime.fromisoformat(inicio.replace("Z", ""))
         dt_fin = datetime.fromisoformat(fin.replace("Z", ""))
@@ -1094,15 +1092,9 @@ def autocerrar_tarea_usuario():
         elapsed = segundos_laborales_transcurridos(dt_inicio, dt_fin, turno)
         elapsed = int(elapsed) - int(pausa_acum_db or 0)
         elapsed = max(0, elapsed)
-        fuera_turno = not esta_en_ventana(dt_fin, turno)
-        if (elapsed < AUTO_CIERRE_LIMITE_SEG) and (not fuera_turno) and (not force_test):
+        if (elapsed < AUTO_CIERRE_LIMITE_SEG) and (not force_test):
             conn.close()
             return jsonify({"ok": False, "msg": "La tarea requiere 8 horas de actividad para autocierre."}), 400
-        if fuera_turno and (not force_test):
-            fin_corte = ultima_fin_ventana(dt_fin, turno)
-            if fin_corte and fin_corte > dt_inicio:
-                fin = fin_corte.strftime("%Y-%m-%d %H:%M:%S")
-                dt_fin = fin_corte
     except Exception:
         # Si no podemos validar, seguimos con autocierre (best-effort)
         pass

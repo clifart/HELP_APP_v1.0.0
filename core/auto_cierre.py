@@ -7,8 +7,6 @@ from core.db import get_db_connection, ensure_tareas_columns
 from core.horarios import (
     segundos_laborales_transcurridos,
     inferir_turno,
-    esta_en_ventana,
-    ultima_fin_ventana,
 )
 from core.autocierre_config import AUTO_CIERRE_TOTAL_HORAS
 from core.horas_extras import calcular_tiempo_total_y_horas_extras
@@ -162,18 +160,13 @@ def ejecutar_autocierre(limite_horas=AUTO_CIERRE_TOTAL_HORAS, max_batch=200):
             elapsed = int(elapsed) - int(pausa_acum_db or 0)
             elapsed = max(0, elapsed)
 
-            fuera_turno = not esta_en_ventana(ahora, turno)
-            if (elapsed < limite_seg) and (not fuera_turno):
+            if elapsed < limite_seg:
                 continue
 
             ahora_iso = now_iso().strip()
             inicio = str(inicio_db).strip() or ahora_iso
 
             fin = ahora_iso
-            if fuera_turno:
-                fin_corte = ultima_fin_ventana(ahora, turno)
-                if fin_corte and fin_corte > dt_inicio:
-                    fin = fin_corte.strftime("%Y-%m-%d %H:%M:%S")
 
             # Calcular tiempo_total
             tiempo_total = ""
