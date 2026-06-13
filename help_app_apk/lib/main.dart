@@ -38,6 +38,7 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
   );
 
   late final WebViewController _controller;
+  final WebViewCookieManager _cookieManager = WebViewCookieManager();
   final TextEditingController _urlInput = TextEditingController(
     text: _defaultUrl,
   );
@@ -68,8 +69,15 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
           },
           onWebResourceError: (_) => setState(() => _hasError = true),
         ),
-      )
-      ..loadRequest(Uri.parse(_defaultUrl));
+      );
+    _startFreshSession();
+  }
+
+  Future<void> _startFreshSession() async {
+    await _cookieManager.clearCookies();
+    await _controller.clearCache();
+    await _controller.clearLocalStorage();
+    await _controller.loadRequest(Uri.parse(_defaultUrl));
   }
 
   @override
@@ -203,7 +211,7 @@ class _ConnectionError extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Verifica que el servidor este encendido en el PC y que la tablet este en la misma red.',
+              'Verifica la conexion a Internet e intenta nuevamente.',
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 18),
