@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .hx-wrap{max-width:1100px;margin:0 auto;padding:18px 16px 22px;}
+  .hx-card{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:16px;
+           box-shadow:0 10px 26px rgba(0,0,0,.10);overflow:hidden}
+  .hx-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;
+           background:linear-gradient(180deg, rgba(0,0,0,.10), rgba(255,255,255,.06));}
+  .hx-title{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;}
+  .hx-sub{opacity:.85;font-size:13px;margin-top:2px}
+  .hx-path{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+           font-size:12px;background:rgba(0,0,0,.20);padding:6px 10px;border-radius:10px;
+           border:1px solid rgba(255,255,255,.18);word-break:break-all;}
+  .hx-body{padding:14px 16px 16px;}
+
+  .hx-actions{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px;}
+  .hx-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;
+          border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.16);color:#fff;text-decoration:none;
+          font-weight:700;font-size:14px;cursor:pointer;}
+  .hx-btn:hover{background:rgba(0,0,0,.24)}
+  .hx-btn.back{background:rgba(255,193,7,.22);border-color:rgba(255,193,7,.40);color:#083b22}
+  .hx-btn.back:hover{background:rgba(255,193,7,.30);}
+  .hx-btn.ok{background:rgba(255,255,255,.14)}
+  .hx-btn.ok:hover{background:rgba(255,255,255,.20)}
+  .hx-btn.gen{background:rgba(11,120,60,.30);border-color:rgba(11,120,60,.50);color:#d4f7e7}
+  .hx-btn.gen:hover{background:rgba(11,120,60,.42)}
+
+  .hx-list{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);
+           border-radius:14px;overflow:hidden}
+  .hx-item{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+           gap:10px;padding:13px 14px;border-bottom:1px solid rgba(255,255,255,.10)}
+  .hx-item:last-child{border-bottom:none}
+
+  .hx-mes-label{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;color:#0b1b12}
+  .hx-badge{font-size:11px;padding:3px 8px;border-radius:8px;font-weight:700;
+            background:rgba(11,120,60,.25);color:#064022;border:1px solid rgba(11,120,60,.35)}
+  .hx-badge.pending{background:rgba(200,150,0,.20);color:#5a3d00;border-color:rgba(200,150,0,.35)}
+
+  .hx-row-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+  .hx-empty{padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.14);
+            border:1px solid rgba(255,255,255,.18);color:#0b1b12}
+
+  /* Mensajes flash */
+  .alert{padding:10px 14px;border-radius:12px;margin-bottom:12px;font-weight:700;font-size:14px;}
+  .alert-success{background:rgba(11,120,60,.25);border:1px solid rgba(11,120,60,.45);color:#052e16}
+  .alert-danger{background:rgba(180,0,0,.20);border:1px solid rgba(180,0,0,.35);color:#3b0000}
+</style>
+
+<div class="hx-wrap">
+  <div class="hx-card">
+    <div class="hx-head">
+      <div>
+        <div class="hx-title">📅 Carpetas mensuales</div>
+        <div class="hx-sub">Recopilación de tareas terminadas por mes.</div>
+      </div>
+      <div class="hx-path" title="Ruta base">{{ base }}</div>
+    </div>
+
+    <div class="hx-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+          <div class="alert alert-{{ cat }}">{{ msg }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <div class="hx-actions">
+        <a class="hx-btn back" href="{{ url_for('admin.panel') }}">⬅ Panel</a>
+        <a class="hx-btn ok" href="{{ url_for('admin.tareas_diarias') }}">📆 Ver por día</a>
+      </div>
+
+      {% if not meses %}
+        <div class="hx-empty"><b>No hay carpetas de días registradas todavía.</b></div>
+      {% else %}
+        <div class="hx-list">
+          {% for info in meses %}
+          <div class="hx-item">
+            <div class="hx-mes-label">
+              🗂️ {{ info.mes | replace("_", "/") }}
+              {% if info.existe %}
+                <span class="hx-badge">✓ Consolidado listo</span>
+              {% else %}
+                <span class="hx-badge pending">Sin consolidar</span>
+              {% endif %}
+            </div>
+            <div class="hx-row-actions">
+              <form method="POST"
+                    action="{{ url_for('admin.generar_mes_xlsx', mes=info.mes) }}"
+                    style="display:inline">
+                <button type="submit" class="hx-btn gen">🔄 Generar</button>
+              </form>
+              <a class="hx-btn ok"
+                 href="{{ url_for('admin.descargar_mes_xlsx', mes=info.mes) }}">
+                ⬇ Descargar Excel
+              </a>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <p style="font-size:12px;opacity:.75;margin-top:10px;color:#0b1b12;">
+          Tip: "Generar" crea/actualiza la carpeta mensual con todas las tareas del mes.
+          "Descargar" genera automáticamente si no existe todavía.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

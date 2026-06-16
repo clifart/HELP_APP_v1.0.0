@@ -76,6 +76,103 @@ def get_carpeta_diaria():
     return carpeta_hoy
 
 
+def consolidar_mes_xlsx(mes=None):
+    """
+    Agrupa todas las carpetas YYYY_MM_DD del mes indicado y genera
+    CARPETA_TAREAS_DIARIAS/YYYY_MM/tareas_mes.xlsx con una hoja 'Tareas'
+    y una hoja 'checklist' consolidadas.
+
+    mes: "YYYY_MM" o None = mes actual.
+    Devuelve la ruta del archivo generado.
+    """
+    if mes is None:
+        mes = datetime.now().strftime("%Y_%m")
+
+    os.makedirs(CARPETA_TAREAS_DIARIAS, exist_ok=True)
+
+    # Carpeta destino mensual
+    carpeta_mes = os.path.join(CARPETA_TAREAS_DIARIAS, mes)
+    os.makedirs(carpeta_mes, exist_ok=True)
+
+    # Recolectar todas las carpetas del mes
+    tareas_headers = None
+    tareas_rows = []
+    checklist_headers = None
+    checklist_rows = []
+
+    try:
+        nombres = sorted(os.listdir(CARPETA_TAREAS_DIARIAS))
+    except OSError:
+        nombres = []
+
+    for nombre in nombres:
+        # Solo directorios YYYY_MM_DD que correspondan al mes
+        parts = nombre.split("_")
+        if len(parts) != 3 or not all(p.isdigit() for p in parts):
+            continue
+        if f"{parts[0]}_{parts[1]}" != mes:
+            continue
+
+        ruta_xlsx = os.path.join(CARPETA_TAREAS_DIARIAS, nombre, "tareas.xlsx")
+        if not os.path.exists(ruta_xlsx):
+            continue
+
+        try:
+            wb = load_workbook(ruta_xlsx, data_only=True, read_only=True)
+        except Exception:
+            continue
+
+        try:
+            # Hoja Tareas
+            ws_t = wb["Tareas"] if "Tareas" in wb.sheetnames else wb.active
+            filas_t = list(ws_t.iter_rows(values_only=True))
+            if filas_t:
+                hdrs = ["" if v is None else str(v).strip() for v in filas_t[0]]
+                if tareas_headers is None:
+                    tareas_headers = hdrs
+                for fila in filas_t[1:]:
+                    row = ["" if v is None else str(v) for v in fila]
+                    if any(c != "" for c in row):
+                        tareas_rows.append(row)
+
+            # Hoja checklist
+            if "checklist" in wb.sheetnames:
+                ws_c = wb["checklist"]
+                filas_c = list(ws_c.iter_rows(values_only=True))
+                if filas_c:
+                    hdrs_c = ["" if v is None else str(v).strip() for v in filas_c[0]]
+                    if checklist_headers is None:
+                        checklist_headers = hdrs_c
+                    for fila in filas_c[1:]:
+                        row = ["" if v is None else str(v) for v in fila]
+                        if any(c != "" for c in row):
+                            checklist_rows.append(row)
+        finally:
+            wb.close()
+
+    # Escribir Excel mensual
+    from openpyxl import Workbook as _Workbook
+    wb_out = _Workbook()
+    ws_out = wb_out.active
+    ws_out.title = "Tareas"
+
+    if tareas_headers:
+        ws_out.append(tareas_headers)
+    for row in tareas_rows:
+        ws_out.append(row)
+
+    if checklist_headers:
+        ws_chk = wb_out.create_sheet(title="checklist")
+        ws_chk.append(checklist_headers)
+        for row in checklist_rows:
+            ws_chk.append(row)
+
+    ruta_salida = os.path.join(carpeta_mes, "tareas_mes.xlsx")
+    wb_out.save(ruta_salida)
+    print(f"[CONSOLIDAR_MES] Generado: {ruta_salida} ({len(tareas_rows)} tareas)")
+    return ruta_salida
+
+
 HEADERS_TAREAS = [
     "fecha_elaboracion",
     "OP No.",

@@ -1465,3 +1465,79 @@ def descargar_historial_diario_xlsx():
     )
 
 
+# ==========================================================
+# 📅 Carpetas MENSUALES — consolidado de tareas por mes
+# ==========================================================
+
+def _listar_meses():
+    """
+    Escanea CARPETA_TAREAS_DIARIAS, agrupa las carpetas YYYY_MM_DD
+    por mes (YYYY_MM) y devuelve la lista de meses ordenada (más reciente primero).
+    """
+    base = _carpeta_diaria_base()
+    meses = set()
+    try:
+        for nombre in os.listdir(base):
+            full = os.path.join(base, nombre)
+            if not os.path.isdir(full):
+                continue
+            parts = nombre.split("_")
+            if len(parts) == 3 and all(p.isdigit() for p in parts):
+                meses.add(f"{parts[0]}_{parts[1]}")
+    except OSError:
+        pass
+    return sorted(meses, reverse=True)
+
+
+@admin_bp.route("/tareas_mensuales")
+def tareas_mensuales():
+    meses = _listar_meses()
+    base = _carpeta_diaria_base()
+    # Para cada mes indicamos si ya existe el archivo consolidado
+    meses_info = []
+    for mes in meses:
+        ruta_xlsx = os.path.join(base, mes, "tareas_mes.xlsx")
+        existe = os.path.exists(ruta_xlsx)
+        meses_info.append({"mes": mes, "existe": existe})
+    return render_template("admin/tareas_mensuales.html", meses=meses_info, base=base)
+
+
+@admin_bp.route("/tareas_mensuales/<mes>/generar", methods=["POST"])
+def generar_mes_xlsx(mes):
+    # Validar formato YYYY_MM
+    parts = mes.split("_")
+    if len(parts) != 2 or not all(p.isdigit() for p in parts):
+        abort(400)
+    from core.registro_diario import consolidar_mes_xlsx
+    try:
+        ruta = consolidar_mes_xlsx(mes)
+        flash(f"Consolidado generado: {ruta}", "success")
+    except Exception as e:
+        flash(f"Error al generar consolidado: {e}", "danger")
+    return redirect(url_for("admin.tareas_mensuales"))
+
+
+@admin_bp.route("/tareas_mensuales/<mes>/descargar")
+def descargar_mes_xlsx(mes):
+    parts = mes.split("_")
+    if len(parts) != 2 or not all(p.isdigit() for p in parts):
+        abort(400)
+    base = _carpeta_diaria_base()
+    ruta = os.path.join(base, mes, "tareas_mes.xlsx")
+
+    # Si no existe, generarlo en el momento
+    if not os.path.exists(ruta):
+        from core.registro_diario import consolidar_mes_xlsx
+        try:
+            ruta = consolidar_mes_xlsx(mes)
+        except Exception as e:
+            flash(f"No se pudo generar el consolidado: {e}", "danger")
+            return redirect(url_for("admin.tareas_mensuales"))
+
+    return send_from_directory(
+        os.path.dirname(ruta),
+        os.path.basename(ruta),
+        as_attachment=True,
+        download_name=f"tareas_{mes}.xlsx",
+    )
+

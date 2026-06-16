@@ -6,13 +6,14 @@
     <form id="checklist-impresion" method="post" action="">
         <input type="hidden" name="id" value="{{ tarea_id or '' }}">
         <input type="hidden" name="op_no" value="{{ op_no or '' }}">
+        <input type="hidden" name="proceso" value="{% if es_corte %}CORTE{% endif %}">
         <input type="hidden" name="modulo" id="modulo-hidden" value="{{ (modulo_activo or 'impresion')|lower }}">
 
         <div class="checklist-wrap">
 
             <div class="checklist-title">
                 <h3 id="tituloChecklist" style="margin:0; text-align:center; color:#0f6a4f; font-weight:800;">
-                    CHECKLIST: {{ (modulo_activo or 'IMPRESION')|upper }}
+                    {% if es_corte %}CHECKLIST: CORTE DE PAPEL{% else %}CHECKLIST: {{ (modulo_activo or 'IMPRESION')|upper }}{% endif %}
                 </h3>
             </div>
 
@@ -86,10 +87,12 @@
                 <!-- ===================================================== -->
                 <!-- II. IMPRESIÓN -->
                 <!-- ===================================================== -->
-                <tbody class="module" data-module="impresion">
+                <tbody class="module" data-module="{% if es_corte %}corte{% else %}impresion{% endif %}">
                     <tr class="section-row">
                         <td class="col-num">II</td>
-                        <td class="col-desc section-title">IMPRESIÓN (MÁQUINAS SORMZ, SORM, GTO46, FLEXO, DIGITAL...)</td>
+                        <td class="col-desc section-title">
+                            {% if es_corte %}REFILE E INDIVIDUALIZACIÓN{% else %}IMPRESIÓN (MÁQUINAS SORMZ, SORM, GTO46, FLEXO, DIGITAL...){% endif %}
+                        </td>
                         <td class="col-opt opt-head"></td>
                         <td class="col-opt opt-head"></td>
                         <td class="col-opt opt-head"></td>
@@ -104,7 +107,9 @@
                     </tr>
                     <tr>
                         <td class="col-num">2</td>
-                        <td class="col-desc">Verificar planchas, OP de las planchas Vs. OP Sherpa APROBADA</td>
+                        <td class="col-desc">
+                            {% if es_corte %}Verificar con la OP: tamaño del pliego: 100x70cm. 90x60cm.{% else %}Verificar planchas, OP de las planchas Vs. OP Sherpa APROBADA{% endif %}
+                        </td>
                         <td class="col-opt"><input type="radio" name="p2_verificar_planchas" value="SI" required></td>
                         <td class="col-opt"><input type="radio" name="p2_verificar_planchas" value="NO"></td>
                         <td class="col-opt"><input type="radio" name="p2_verificar_planchas" value="NA"></td>
@@ -117,6 +122,7 @@
                         <td class="col-opt"><input type="radio" name="p3_alistamiento_corte_papel" value="NA"></td>
                     </tr>
 
+                    {% if not es_corte %}
                     <tr class="section-row">
                         <td class="col-num">4</td>
                         <td class="col-desc section-title">Control en proceso cada 50 tiros</td>
@@ -139,6 +145,7 @@
                         <td class="col-opt"><input type="radio" name="p42_tonos_muestra_aprobada" value="NO"></td>
                         <td class="col-opt"><input type="radio" name="p42_tonos_muestra_aprobada" value="NA"></td>
                     </tr>
+                    {% endif %}
 
                     <tr class="footer-row">
                         <td colspan="3" class="footer-cell">
@@ -720,6 +727,7 @@
           if (t.includes("PLEG")) return "plegado";
           if (t.includes("BRILL") || t.includes("BARNIZ")) return "brillo";
           if (t.includes("PLAST")) return "plastificado";
+          if (t === "CORTE" || t.startsWith("CORTE ")) return "corte";
           if (t.includes("IMPRES")) return "impresion";
           if (t.includes("TROQUEL") || t.includes("REFIL")) return "troquelado_refilado";
           if (t.includes("REVISION")) return "encuadernacion";

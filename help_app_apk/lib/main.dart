@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 const String kAppTitle = 'TrazOp';
@@ -44,7 +47,9 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
   );
   int _progress = 0;
   bool _hasError = false;
+  String _errorMessage = '';
   String _currentUrl = _defaultUrl;
+  Timer? _loadTimeout;
 
   @override
   void initState() {
@@ -56,32 +61,69 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
         NavigationDelegate(
           onProgress: (progress) => setState(() => _progress = progress),
           onPageStarted: (url) {
+            _startLoadTimeout();
             setState(() {
               _hasError = false;
+              _errorMessage = '';
               _currentUrl = url;
             });
           },
           onPageFinished: (url) {
+            _loadTimeout?.cancel();
             setState(() {
               _progress = 100;
               _currentUrl = url;
             });
           },
-          onWebResourceError: (_) => setState(() => _hasError = true),
+          onWebResourceError: (error) {
+            if (error.isForMainFrame == false) return;
+            _showLoadError(error.description);
+          },
         ),
       );
     _startFreshSession();
   }
 
   Future<void> _startFreshSession() async {
-    await _cookieManager.clearCookies();
-    await _controller.clearCache();
-    await _controller.clearLocalStorage();
-    await _controller.loadRequest(Uri.parse(_defaultUrl));
+    try {
+      await _cookieManager.clearCookies();
+      await _controller.clearCache();
+      await _controller.clearLocalStorage();
+    } catch (_) {
+      // La limpieza de sesión no debe impedir que TrazOp cargue.
+    }
+    await _loadUrl(_defaultUrl);
+  }
+
+  Future<void> _loadUrl(String url) async {
+    _startLoadTimeout();
+    try {
+      await _controller.loadRequest(Uri.parse(url));
+    } catch (error) {
+      _showLoadError(error.toString());
+    }
+  }
+
+  void _startLoadTimeout() {
+    _loadTimeout?.cancel();
+    _loadTimeout = Timer(const Duration(seconds: 12), () {
+      _showLoadError('El servidor no respondió a tiempo.');
+    });
+  }
+
+  void _showLoadError(String message) {
+    _loadTimeout?.cancel();
+    if (!mounted) return;
+    setState(() {
+      _hasError = true;
+      _errorMessage = message;
+      _progress = 100;
+    });
   }
 
   @override
   void dispose() {
+    _loadTimeout?.cancel();
     _urlInput.dispose();
     super.dispose();
   }
@@ -92,9 +134,17 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
     }
   }
 
+  Future<void> _closeApp() async {
+    await SystemNavigator.pop();
+  }
+
   Future<void> _reload() async {
-    setState(() => _hasError = false);
-    await _controller.reload();
+    setState(() {
+      _hasError = false;
+      _errorMessage = '';
+      _progress = 0;
+    });
+    await _loadUrl(_currentUrl);
   }
 
   Future<void> _openUrlDialog() async {
@@ -133,9 +183,10 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
         : 'http://$nextUrl';
     setState(() {
       _hasError = false;
+      _errorMessage = '';
       _currentUrl = normalized;
     });
-    await _controller.loadRequest(Uri.parse(normalized));
+    await _loadUrl(normalized);
   }
 
   @override
@@ -143,7 +194,7 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _goBack();
+        if (!didPop) _closeApp();
       },
       child: Scaffold(
         appBar: AppBar(
@@ -177,7 +228,12 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
                 minHeight: 3,
               ),
             if (_hasError)
-              _ConnectionError(onRetry: _reload, onConfig: _openUrlDialog),
+              _ConnectionError(
+                url: _currentUrl,
+                message: _errorMessage,
+                onRetry: _reload,
+                onConfig: _openUrlDialog,
+              ),
           ],
         ),
       ),
@@ -186,8 +242,15 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
 }
 
 class _ConnectionError extends StatelessWidget {
-  const _ConnectionError({required this.onRetry, required this.onConfig});
+  const _ConnectionError({
+    required this.url,
+    required this.message,
+    required this.onRetry,
+    required this.onConfig,
+  });
 
+  final String url;
+  final String message;
   final VoidCallback onRetry;
   final VoidCallback onConfig;
 
@@ -211,9 +274,23 @@ class _ConnectionError extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Verifica la conexion a Internet e intenta nuevamente.',
+              'Verifica que el servidor TrazOp esté encendido y que el teléfono esté conectado a la misma red.',
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 8),
+            Text(
+              url,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            if (message.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+            ],
             const SizedBox(height: 18),
             Wrap(
               alignment: WrapAlignment.center,

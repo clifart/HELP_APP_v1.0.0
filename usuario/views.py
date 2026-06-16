@@ -250,9 +250,9 @@ def _modulo_por_proceso(nombre: str) -> Optional[str]:
     if "FLEXO" in norm:
         return "impresion"
 
-    # CORTE usa checklist de IMPRESION
+    # CORTE usa una variante propia de la plantilla de impresión.
     if norm == "CORTE" or norm.startswith("CORTE "):
-        return "impresion"
+        return "corte"
 
     # MANTENIMIENTO SORMZ/SORM BARNIZADO
     # Acepta variantes como: "MANTENIMIENTO ... BARNIZADO" o "SORMZ-SORM BARNIZADO"
@@ -1456,6 +1456,7 @@ def checklist_impresion():
             pass
 
     proceso = (proceso or "").strip()
+    es_corte = _normalizar_proceso(proceso).startswith("CORTE")
 
     # ⛔ Bloquear checklist SOLO si ESA tarea (OP + proceso + usuario) está Pausada
     if op_no and proceso and (not tarea_id):
@@ -1543,7 +1544,7 @@ def checklist_impresion():
             VALUES (?, ?, ?, ?, ?, ?)
         """, (usuario, op_no, modulo, tarea_id_int, fecha, json.dumps(data_dict, ensure_ascii=False)))
 
-        if modulo == "impresion":
+        if modulo in {"impresion", "corte"}:
             p1 = (request.form.get('p1_entrega_paquete') or 'NA').strip()
             p2 = (request.form.get('p2_verificar_planchas') or 'NA').strip()
             p3 = (request.form.get('p3_alistamiento_corte_papel') or 'NA').strip()
@@ -1585,6 +1586,7 @@ def checklist_impresion():
             op_no=op_no,
             usuario=usuario,
             modulo_activo=modulo_activo,
+            es_corte=es_corte,
             tarea_id=tarea_id_int or ""
         )
     except TemplateNotFound:
@@ -1593,5 +1595,6 @@ def checklist_impresion():
             op_no=op_no,
             usuario=usuario,
             modulo_activo=modulo_activo,
+            es_corte=es_corte,
             tarea_id=tarea_id_int or ""
         )
