@@ -1,0 +1,830 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* ===== CALCULADORA DE CORTE ===== */
+.calc-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 12px 40px;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Header */
+.calc-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.calc-back {
+  background: #0f6a4f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 18px;
+  text-decoration: none;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.calc-back:hover { background: #0a5040; color: #fff; }
+.calc-title { font-size: 1.25rem; font-weight: 700; color: #056c4e; margin: 0; }
+.calc-subtitle { font-size: 0.82rem; color: #555; margin: 0; }
+
+/* Cards */
+.calc-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  padding: 18px 16px;
+  margin-bottom: 14px;
+}
+.calc-card-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0f6a4f;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0f0e8;
+}
+
+/* Form grid */
+.calc-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.calc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 80px;
+}
+.calc-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #444;
+}
+.calc-input {
+  padding: 9px 10px;
+  border: 1.5px solid #c8ddd6;
+  border-radius: 8px;
+  font-size: 15px;
+  background: #f8fdfb;
+  transition: border-color 0.18s;
+  width: 100%;
+  box-sizing: border-box;
+}
+.calc-input:focus {
+  border-color: #0f6a4f;
+  outline: none;
+  background: #fff;
+}
+.calc-select {
+  padding: 9px 10px;
+  border: 1.5px solid #c8ddd6;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #f8fdfb;
+  width: 100%;
+  box-sizing: border-box;
+}
+.calc-sep {
+  font-size: 18px;
+  color: #888;
+  padding-bottom: 8px;
+  align-self: flex-end;
+  flex: 0;
+}
+.calc-unit {
+  font-size: 0.78rem;
+  color: #888;
+  align-self: flex-end;
+  padding-bottom: 10px;
+  white-space: nowrap;
+}
+
+/* Radio pills */
+.radio-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.radio-pill input { display: none; }
+.radio-pill label {
+  display: inline-block;
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid #c8ddd6;
+  color: #555;
+  background: #f8fdfb;
+  transition: all 0.15s;
+  user-select: none;
+}
+.radio-pill input:checked + label {
+  background: #0f6a4f;
+  color: #fff;
+  border-color: #0f6a4f;
+}
+
+/* Resultado highlight */
+.res-block {
+  display: none;
+}
+.res-block.visible { display: block; }
+
+.res-pliegos {
+  background: linear-gradient(135deg, #0f6a4f, #1a9070);
+  color: #fff;
+  border-radius: 12px;
+  padding: 18px 20px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+.res-pliegos-num {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.res-pliegos-label {
+  font-size: 0.9rem;
+  opacity: 0.88;
+  margin-top: 4px;
+}
+.res-pliegos-detail {
+  font-size: 0.78rem;
+  opacity: 0.75;
+  margin-top: 6px;
+}
+
+/* Tabla orientaciones */
+.orient-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.orient-table th {
+  background: #f0f7f4;
+  color: #0f6a4f;
+  font-weight: 700;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 2px solid #cde8dc;
+}
+.orient-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+.orient-table tr:last-child td { border-bottom: none; }
+.orient-table tr.mejor-row td { background: #e8f8ef; }
+.orient-table tr.mejor-row td:first-child { border-left: 3px solid #0f6a4f; }
+
+/* Badge */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.badge-verde { background: #0f6a4f; color: #fff; }
+.badge-gris  { background: #e0e0e0; color: #555; }
+.badge-naranja { background: #f59e0b; color: #fff; }
+.badge-azul  { background: #0d6efd; color: #fff; }
+
+/* Escalonado / sobrante section */
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 13px;
+}
+.info-row:last-child { border-bottom: none; }
+.info-label { color: #666; }
+.info-value { font-weight: 700; color: #222; }
+.info-value.highlight { color: #0f6a4f; }
+
+/* SVG visualization */
+.svg-wrapper {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+.svg-wrapper svg { border-radius: 6px; }
+
+/* Leyenda SVG */
+.svg-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #555;
+}
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-box { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.15); }
+
+/* Sin datos */
+.sin-datos {
+  text-align: center;
+  color: #aaa;
+  padding: 24px 0;
+  font-size: 14px;
+}
+
+/* Sub-tabs para modo doble */
+.sub-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-left: 2px;
+}
+.sub-tab {
+  display: none;
+}
+.sub-tab.visible { display: block; }
+
+/* Responsive */
+@media (max-width: 540px) {
+  .calc-page { padding: 10px 8px 32px; }
+  .calc-card { padding: 14px 12px; }
+  .orient-table { font-size: 12px; }
+  .orient-table th, .orient-table td { padding: 6px 7px; }
+  .res-pliegos-num { font-size: 2.4rem; }
+}
+</style>
+
+<div class="calc-page">
+
+  <!-- HEADER -->
+  <div class="calc-header">
+    <a href="{{ url_for('usuario.panel') }}" class="calc-back" title="Volver">&#8592;</a>
+    <div>
+      <div class="calc-title">Calculadora de Corte</div>
+      <div class="calc-subtitle">Pliegos · Escalonado</div>
+    </div>
+  </div>
+
+  <!-- CONFIGURACIÓN -->
+  <div class="calc-card">
+    <div class="calc-card-title">Configuración</div>
+
+    <!-- Pliego preset -->
+    <div class="calc-row">
+      <div class="calc-field" style="flex: 2;">
+        <label class="calc-label">Tamaño del pliego</label>
+        <select class="calc-select" id="presetPliego">
+          <option value="">Personalizado...</option>
+          <option value="70,100" selected>70 × 100 cm</option>
+          <option value="60,90">65 × 90 cm</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Pliego personalizado -->
+    <div class="calc-row" id="rowPliegoCustom" style="display:none;">
+      <div class="calc-field">
+        <label class="calc-label">Ancho pliego</label>
+        <input type="number" class="calc-input" id="pliegoW" min="1" step="0.1" placeholder="70">
+      </div>
+      <div class="calc-sep">×</div>
+      <div class="calc-field">
+        <label class="calc-label">Alto pliego</label>
+        <input type="number" class="calc-input" id="pliegoH" min="1" step="0.1" placeholder="100">
+      </div>
+      <div class="calc-unit">cm</div>
+    </div>
+
+    <!-- Pieza -->
+    <div class="calc-row">
+      <div class="calc-field">
+        <label class="calc-label">Ancho de pieza</label>
+        <input type="number" class="calc-input" id="piezaW" min="1" step="0.1" placeholder="ej: 21">
+      </div>
+      <div class="calc-sep">×</div>
+      <div class="calc-field">
+        <label class="calc-label">Alto de pieza</label>
+        <input type="number" class="calc-input" id="piezaH" min="1" step="0.1" placeholder="ej: 32">
+      </div>
+      <div class="calc-unit">cm</div>
+    </div>
+
+    <!-- Cantidad requerida -->
+    <div class="calc-row">
+      <div class="calc-field" style="flex: 2;">
+        <label class="calc-label">Cantidad requerida</label>
+        <input type="number" class="calc-input" id="cantidad" min="1" step="1" placeholder="ej: 1000">
+      </div>
+      <div class="calc-unit">piezas</div>
+    </div>
+
+  </div>
+
+  <!-- RESULTADOS -->
+  <div id="resBlock" class="res-block">
+
+    <!-- Total pliegos -->
+    <div class="res-pliegos">
+      <div class="res-pliegos-num" id="resNumPliegos">—</div>
+      <div class="res-pliegos-label">pliegos necesarios</div>
+      <div class="res-pliegos-detail" id="resPliegosDetail"></div>
+    </div>
+
+    <!-- Tabla orientaciones -->
+    <div class="calc-card">
+      <div class="calc-card-title">Opciones de corte</div>
+      <div style="overflow-x:auto;">
+        <table class="orient-table">
+          <thead>
+            <tr>
+              <th>Orientación</th>
+              <th>Filas × Col</th>
+              <th>Piezas/pliego</th>
+              <th>Sobrante (An × Al)</th>
+              <th>Hilo</th>
+            </tr>
+          </thead>
+          <tbody id="tblOrientaciones"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Corte escalonado (franjas mixtas) -->
+    <div class="calc-card" id="cardEscalonado">
+      <div class="calc-card-title">Corte escalonado · Franjas mixtas</div>
+      <div id="resEscalonado"></div>
+    </div>
+
+    <!-- Sobrante aprovechable -->
+    <div class="calc-card" id="cardSobrante" style="display:none;">
+      <div class="calc-card-title" id="cardSobranteTitle">Sobrante aprovechable</div>
+      <div id="resSobrante"></div>
+    </div>
+
+    <!-- Visualización SVG -->
+    <div class="calc-card">
+      <div class="calc-card-title" id="tituloVisualizacion">Visualización del corte</div>
+      <div class="svg-wrapper" id="svgWrapper"></div>
+      <div class="svg-legend" id="svgLegend"></div>
+    </div>
+
+  </div>
+
+  <!-- Estado vacío -->
+  <div class="calc-card" id="sinDatos">
+    <div class="sin-datos">
+      Ingresa el tamaño del pliego y la pieza para calcular.
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  // ===== HELPERS =====
+  const $ = id => document.getElementById(id);
+  const floor = Math.floor;
+  const ceil  = Math.ceil;
+
+  function fmt(n) {
+    return Number.isFinite(n) ? (Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, '')) : '—';
+  }
+
+  // ===== ESTADO =====
+  let W = 70, H = 100;  // pliego
+  let w = 0,  h = 0;   // pieza
+  let qty = 0;
+
+  // ===== PRESET PLIEGO =====
+  $('presetPliego').addEventListener('change', function () {
+    const v = this.value;
+    const rowCustom = $('rowPliegoCustom');
+    if (!v) {
+      rowCustom.style.display = 'flex';
+      W = parseFloat($('pliegoW').value) || 0;
+      H = parseFloat($('pliegoH').value) || 0;
+    } else {
+      rowCustom.style.display = 'none';
+      [W, H] = v.split(',').map(Number);
+    }
+    recalcular();
+  });
+  $('pliegoW').addEventListener('input', () => { W = parseFloat($('pliegoW').value) || 0; recalcular(); });
+  $('pliegoH').addEventListener('input', () => { H = parseFloat($('pliegoH').value) || 0; recalcular(); });
+  $('piezaW').addEventListener('input', () => { w = parseFloat($('piezaW').value) || 0; recalcular(); });
+  $('piezaH').addEventListener('input', () => { h = parseFloat($('piezaH').value) || 0; recalcular(); });
+  $('cantidad').addEventListener('input', () => { qty = parseInt($('cantidad').value) || 0; recalcular(); });
+
+  // ===== CÁLCULOS CORE =====
+
+  /** Piezas por pliego para medida pw × ph */
+  function piezasPliego(pw, ph) {
+    if (!pw || !ph || pw > W || ph > H) return { col: 0, fil: 0, total: 0, sobW: W, sobH: H };
+    const col = floor(W / pw);
+    const fil = floor(H / ph);
+    return {
+      col, fil, total: col * fil,
+      sobW: W - col * pw,
+      sobH: H - fil * ph
+    };
+  }
+
+  /** Detectar si orientación A es "al hilo" (dim mayor pieza alineada con dim mayor pliego) */
+  function hiloLabel(pw, ph) {
+    const mayorPliego = H >= W ? H : W;
+    const mayorPieza  = ph >= pw ? ph : pw;
+    // Al hilo: la dim mayor de la pieza va en la misma dir que la dim mayor del pliego
+    // Orientación A: pw va en ancho del pliego, ph va en alto
+    // Si ph alinea con la dim mayor del pliego (H) → depende de si ph es la mayor
+    const orientAalineaMayor = (H >= W && ph >= pw) || (W > H && pw >= ph);
+    return orientAalineaMayor ? 'Al hilo' : 'Contra el hilo';
+  }
+
+  /** Corte escalonado con franjas mixtas — split horizontal en Z1 (arriba) y Z2 (abajo) */
+  function calcEscalonado() {
+    if (!w || !h) return null;
+    const pw = w, ph = h;
+
+    // Puntos de corte significativos en la dimensión de alto del pliego
+    const splits = new Set([0, H]);
+    for (let i = 1; i * ph <= H; i++) splits.add(i * ph);
+    for (let i = 1; i * pw <= H; i++) splits.add(i * pw);
+
+    let simpleA = piezasPliego(pw, ph).total;
+    let simpleB = piezasPliego(ph, pw).total;
+    let bestSimple = Math.max(simpleA, simpleB);
+    let bestEsc = bestSimple;
+    let bestCfg = null;
+
+    for (const h1 of splits) {
+      const h2 = H - h1;
+      // Zona1=A, Zona2=B
+      const zA = floor(W / pw) * floor(h1 / ph);
+      const zB = floor(W / ph) * floor(h2 / pw);
+      if (zA + zB > bestEsc) {
+        bestEsc = zA + zB;
+        bestCfg = {
+          h1, h2, z1: zA, z2: zB,
+          desc1: `Franja A (${fmt(h1)} cm alto): ${floor(W/pw)} col × ${floor(h1/ph)} fil = ${zA} piezas`,
+          desc2: `Franja B (${fmt(h2)} cm alto): ${floor(W/ph)} col × ${floor(h2/pw)} fil = ${zB} piezas`,
+          orient1: `${fmt(pw)}×${fmt(ph)} cm`,
+          orient2: `${fmt(ph)}×${fmt(pw)} cm`,
+          col1: floor(W/pw), fil1: floor(h1/ph),
+          col2: floor(W/ph), fil2: floor(h2/pw),
+          ph1: ph, ph2: pw
+        };
+      }
+      // Zona1=B, Zona2=A
+      const z1b = floor(W / ph) * floor(h1 / pw);
+      const z2a = floor(W / pw) * floor(h2 / ph);
+      if (z1b + z2a > bestEsc) {
+        bestEsc = z1b + z2a;
+        bestCfg = {
+          h1, h2, z1: z1b, z2: z2a,
+          desc1: `Franja A (${fmt(h1)} cm alto): ${floor(W/ph)} col × ${floor(h1/pw)} fil = ${z1b} piezas`,
+          desc2: `Franja B (${fmt(h2)} cm alto): ${floor(W/pw)} col × ${floor(h2/ph)} fil = ${z2a} piezas`,
+          orient1: `${fmt(ph)}×${fmt(pw)} cm`,
+          orient2: `${fmt(pw)}×${fmt(ph)} cm`,
+          col1: floor(W/ph), fil1: floor(h1/pw),
+          col2: floor(W/pw), fil2: floor(h2/ph),
+          ph1: pw, ph2: ph
+        };
+      }
+    }
+
+    // También probar splits en ancho
+    const splitsW = new Set([0, W]);
+    for (let i = 1; i * pw <= W; i++) splitsW.add(i * pw);
+    for (let i = 1; i * ph <= W; i++) splitsW.add(i * ph);
+
+    for (const w1 of splitsW) {
+      const w2 = W - w1;
+      const zA = floor(w1 / pw) * floor(H / ph);
+      const zB = floor(w2 / ph) * floor(H / pw);
+      if (zA + zB > bestEsc) {
+        bestEsc = zA + zB;
+        bestCfg = {
+          h1: null, w1, w2, z1: zA, z2: zB,
+          desc1: `Franja A (${fmt(w1)} cm ancho): ${floor(w1/pw)} col × ${floor(H/ph)} fil = ${zA} piezas`,
+          desc2: `Franja B (${fmt(w2)} cm ancho): ${floor(w2/ph)} col × ${floor(H/pw)} fil = ${zB} piezas`,
+          orient1: `${fmt(pw)}×${fmt(ph)} cm`,
+          orient2: `${fmt(ph)}×${fmt(pw)} cm`,
+          col1: floor(w1/pw), fil1: floor(H/ph),
+          col2: floor(w2/ph), fil2: floor(H/pw),
+          isVertSplit: true
+        };
+      }
+      const z1b = floor(w1 / ph) * floor(H / pw);
+      const z2a = floor(w2 / pw) * floor(H / ph);
+      if (z1b + z2a > bestEsc) {
+        bestEsc = z1b + z2a;
+        bestCfg = {
+          h1: null, w1, w2, z1: z1b, z2: z2a,
+          desc1: `Franja A (${fmt(w1)} cm ancho): ${floor(w1/ph)} col × ${floor(H/pw)} fil = ${z1b} piezas`,
+          desc2: `Franja B (${fmt(w2)} cm ancho): ${floor(w2/pw)} col × ${floor(H/ph)} fil = ${z2a} piezas`,
+          orient1: `${fmt(ph)}×${fmt(pw)} cm`,
+          orient2: `${fmt(pw)}×${fmt(ph)} cm`,
+          col1: floor(w1/ph), fil1: floor(H/pw),
+          col2: floor(w2/pw), fil2: floor(H/ph),
+          isVertSplit: true
+        };
+      }
+    }
+
+    return { bestSimple, bestEsc, mejora: bestEsc > bestSimple, config: bestCfg };
+  }
+
+  /** Sobrante de una orientación: ¿el strip sobrante da piezas adicionales? */
+  function calcSobrante(pw, ph) {
+    const c = piezasPliego(pw, ph);
+    const extra = [];
+    // Strip lateral (sobW alto H)
+    if (c.sobW > 0) {
+      const eA = piezasPliego(pw, ph);  // mismo orient en strip
+      const inStrip = floor(c.sobW / pw) * floor(H / ph);
+      const inStripB = floor(c.sobW / ph) * floor(H / pw);
+      const best = Math.max(inStrip, inStripB);
+      if (best > 0) extra.push({ donde: `Franja lateral (${fmt(c.sobW)} cm ancho)`, piezas: best });
+    }
+    // Strip inferior (sobH ancho W)
+    if (c.sobH > 0) {
+      const inStrip = floor(W / pw) * floor(c.sobH / ph);
+      const inStripB = floor(W / ph) * floor(c.sobH / pw);
+      const best = Math.max(inStrip, inStripB);
+      if (best > 0) extra.push({ donde: `Franja inferior (${fmt(c.sobH)} cm alto)`, piezas: best });
+    }
+    return extra;
+  }
+
+  // ===== RENDER SVG =====
+  function dibujarSVG(pw, ph, titulo) {
+    if (!pw || !ph || pw > W || ph > H) return;
+    const maxSVGW = Math.min(340, window.innerWidth - 60);
+    const maxSVGH = 220;
+    const scale = Math.min(maxSVGW / W, maxSVGH / H);
+    const svgW = W * scale;
+    const svgH = H * scale;
+
+    const col = floor(W / pw);
+    const fil = floor(H / ph);
+    const pxW = pw * scale;
+    const pxH = ph * scale;
+
+    let svg = `<svg width="${svgW.toFixed(1)}" height="${svgH.toFixed(1)}" viewBox="0 0 ${svgW.toFixed(1)} ${svgH.toFixed(1)}" style="background:#f0f0f0; border:1px solid #ccc;">`;
+
+    // Piezas principales
+    for (let c = 0; c < col; c++) {
+      for (let f = 0; f < fil; f++) {
+        const x = (c * pw * scale).toFixed(2);
+        const y = (f * ph * scale).toFixed(2);
+        svg += `<rect x="${x}" y="${y}" width="${(pxW-0.8).toFixed(2)}" height="${(pxH-0.8).toFixed(2)}" fill="#4caf8a" stroke="#fff" stroke-width="0.8" rx="1"/>`;
+      }
+    }
+
+    // Franja sobrante lateral
+    const sobX = (col * pw * scale).toFixed(2);
+    if (parseFloat(sobX) < svgW - 0.5) {
+      svg += `<rect x="${sobX}" y="0" width="${(svgW - parseFloat(sobX)).toFixed(2)}" height="${svgH.toFixed(1)}" fill="#e0e0e0" opacity="0.7"/>`;
+    }
+    // Franja sobrante inferior
+    const sobY = (fil * ph * scale).toFixed(2);
+    if (parseFloat(sobY) < svgH - 0.5) {
+      svg += `<rect x="0" y="${sobY}" width="${(col * pw * scale).toFixed(2)}" height="${(svgH - parseFloat(sobY)).toFixed(2)}" fill="#e0e0e0" opacity="0.7"/>`;
+    }
+
+    // Dimensiones
+    svg += `<text x="${(svgW/2).toFixed(1)}" y="${(svgH-3).toFixed(1)}" text-anchor="middle" font-size="9" fill="#555">${fmt(W)} cm</text>`;
+    svg += `<text x="4" y="${(svgH/2).toFixed(1)}" text-anchor="middle" font-size="9" fill="#555" transform="rotate(-90 4 ${(svgH/2).toFixed(1)})">${fmt(H)} cm</text>`;
+
+    svg += '</svg>';
+    $('svgWrapper').innerHTML = svg;
+    $('svgLegend').innerHTML = `
+      <div class="legend-item"><div class="legend-box" style="background:#4caf8a;"></div> Pieza (${fmt(pw)} × ${fmt(ph)} cm)</div>
+      <div class="legend-item"><div class="legend-box" style="background:#e0e0e0;"></div> Sobrante</div>
+    `;
+  }
+
+  function dibujarSVGEscalonado(cfg) {
+    if (!cfg || (!cfg.h1 && !cfg.w1 && cfg.h1 !== 0)) {
+      dibujarSVG(w, h, '');
+      return;
+    }
+    const maxSVGW = Math.min(340, window.innerWidth - 60);
+    const maxSVGH = 220;
+    const scale = Math.min(maxSVGW / W, maxSVGH / H);
+    const svgW = W * scale;
+    const svgH = H * scale;
+
+    let svg = `<svg width="${svgW.toFixed(1)}" height="${svgH.toFixed(1)}" viewBox="0 0 ${svgW.toFixed(1)} ${svgH.toFixed(1)}" style="background:#f0f0f0; border:1px solid #ccc;">`;
+
+    if (!cfg.isVertSplit && cfg.h1 !== null) {
+      // Split horizontal: Zona1 arriba (h1), Zona2 abajo (h2)
+      const ph1 = cfg.ph1 || h, ph2 = cfg.ph2 || w;
+      const pw1 = (ph1 === h) ? w : h;
+      const pw2 = (ph2 === w) ? h : w;
+      const y1max = cfg.h1 * scale;
+      // Zona 1
+      const col1 = floor(W / pw1); const fil1 = floor(cfg.h1 / ph1);
+      for (let c = 0; c < col1; c++) {
+        for (let f = 0; f < fil1; f++) {
+          svg += `<rect x="${(c*pw1*scale).toFixed(2)}" y="${(f*ph1*scale).toFixed(2)}" width="${(pw1*scale-0.8).toFixed(2)}" height="${(ph1*scale-0.8).toFixed(2)}" fill="#4caf8a" stroke="#fff" stroke-width="0.8" rx="1"/>`;
+        }
+      }
+      // Zona 2
+      const col2 = floor(W / pw2); const fil2 = floor(cfg.h2 / ph2);
+      for (let c = 0; c < col2; c++) {
+        for (let f = 0; f < fil2; f++) {
+          svg += `<rect x="${(c*pw2*scale).toFixed(2)}" y="${(y1max + f*ph2*scale).toFixed(2)}" width="${(pw2*scale-0.8).toFixed(2)}" height="${(ph2*scale-0.8).toFixed(2)}" fill="#f59e0b" stroke="#fff" stroke-width="0.8" rx="1" opacity="0.9"/>`;
+        }
+      }
+      // Línea divisoria
+      if (cfg.h1 > 0 && cfg.h1 < H) {
+        svg += `<line x1="0" y1="${y1max.toFixed(2)}" x2="${svgW.toFixed(1)}" y2="${y1max.toFixed(2)}" stroke="#333" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+      }
+    } else if (cfg.isVertSplit && cfg.w1 !== null) {
+      // Split vertical: Zona1 izq (w1), Zona2 der (w2)
+      const pw1 = cfg.col1 > 0 ? (cfg.col1 === floor(cfg.w1/w) ? w : h) : w;
+      const ph1 = cfg.fil1 > 0 ? (cfg.fil1 === floor(H/h) ? h : w) : h;
+      const pw2 = cfg.col2 > 0 ? (cfg.col2 === floor(cfg.w2/h) ? h : w) : h;
+      const ph2 = cfg.fil2 > 0 ? (cfg.fil2 === floor(H/w) ? w : h) : w;
+      const x1max = cfg.w1 * scale;
+      // Zona 1
+      for (let c = 0; c < cfg.col1; c++) {
+        for (let f = 0; f < cfg.fil1; f++) {
+          svg += `<rect x="${(c*pw1*scale).toFixed(2)}" y="${(f*ph1*scale).toFixed(2)}" width="${(pw1*scale-0.8).toFixed(2)}" height="${(ph1*scale-0.8).toFixed(2)}" fill="#4caf8a" stroke="#fff" stroke-width="0.8" rx="1"/>`;
+        }
+      }
+      // Zona 2
+      for (let c = 0; c < cfg.col2; c++) {
+        for (let f = 0; f < cfg.fil2; f++) {
+          svg += `<rect x="${(x1max + c*pw2*scale).toFixed(2)}" y="${(f*ph2*scale).toFixed(2)}" width="${(pw2*scale-0.8).toFixed(2)}" height="${(ph2*scale-0.8).toFixed(2)}" fill="#f59e0b" stroke="#fff" stroke-width="0.8" rx="1" opacity="0.9"/>`;
+        }
+      }
+      if (cfg.w1 > 0 && cfg.w1 < W) {
+        svg += `<line x1="${x1max.toFixed(2)}" y1="0" x2="${x1max.toFixed(2)}" y2="${svgH.toFixed(1)}" stroke="#333" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+      }
+    } else {
+      dibujarSVG(w, h, '');
+      return;
+    }
+
+    svg += `<text x="${(svgW/2).toFixed(1)}" y="${(svgH-3).toFixed(1)}" text-anchor="middle" font-size="9" fill="#555">${fmt(W)} cm</text>`;
+    svg += '</svg>';
+    $('svgWrapper').innerHTML = svg;
+    $('svgLegend').innerHTML = `
+      <div class="legend-item"><div class="legend-box" style="background:#4caf8a;"></div> Franja A (${cfg.orient1 || ''})</div>
+      <div class="legend-item"><div class="legend-box" style="background:#f59e0b;"></div> Franja B (${cfg.orient2 || ''})</div>
+      <div class="legend-item"><div class="legend-box" style="background:#e0e0e0;"></div> Sobrante</div>
+    `;
+  }
+
+  // ===== RECALCULAR =====
+  function recalcular() {
+    const valido = W > 0 && H > 0 && w > 0 && h > 0 && w <= W && h <= H;
+
+    $('sinDatos').style.display = valido ? 'none' : 'block';
+    $('resBlock').classList.toggle('visible', valido);
+    if (!valido) return;
+
+    // --- Orientación A: w ancho × h alto ---
+    const A = piezasPliego(w, h);
+    // --- Orientación B: h ancho × w alto ---
+    const B = piezasPliego(h, w);
+
+    const hiloA = hiloLabel(w, h);
+    const hiloB = hiloA === 'Al hilo' ? 'Contra el hilo' : 'Al hilo';
+
+    const mejorSimple = A.total >= B.total ? 'A' : 'B';
+    const mejorSimplePiezas = Math.max(A.total, B.total);
+    const mejorSimpleOrient = mejorSimple === 'A'
+      ? { pw: w, ph: h, c: A } : { pw: h, ph: w, c: B };
+
+    // --- Escalonado ---
+    const esc = calcEscalonado();
+
+    // Mejor resultado global
+    const usaEscalonado = !!(esc && esc.mejora && esc.config && esc.bestEsc > mejorSimplePiezas);
+    const mejorGlobal = usaEscalonado ? esc.bestEsc : mejorSimplePiezas;
+
+    // Pliegos necesarios
+    const pliegos = qty > 0 ? ceil(qty / (mejorGlobal || 1)) : '—';
+
+    // ===== RENDER RESULTADOS =====
+
+    // Total pliegos
+    $('resNumPliegos').textContent = pliegos;
+    $('resPliegosDetail').textContent = qty > 0 && mejorGlobal > 0
+      ? `${qty} piezas ÷ ${mejorGlobal} piezas/pliego (${usaEscalonado ? 'escalonado' : 'uniforme'})`
+      : `Mejor rendimiento: ${mejorGlobal} piezas/pliego (${usaEscalonado ? 'escalonado' : 'uniforme'})`;
+    const tituloViz = $('tituloVisualizacion');
+    if (tituloViz) tituloViz.textContent = usaEscalonado ? 'Visualización del corte escalonado' : 'Visualización del corte uniforme';
+
+    // Tabla orientaciones
+    let tblHTML = '';
+    const filas = [
+      { label: `${fmt(w)} × ${fmt(h)} cm`, r: A, hilo: hiloA, isMejor: !usaEscalonado && A.total >= B.total },
+      { label: `${fmt(h)} × ${fmt(w)} cm`, r: B, hilo: hiloB, isMejor: !usaEscalonado && B.total > A.total },
+    ];
+    if (usaEscalonado) {
+      filas.push({
+        label: 'Escalonado (franjas mixtas)',
+        filasCol: 'Mixto',
+        total: esc.bestEsc,
+        sobrante: 'Ver detalle',
+        hilo: 'Escalonado',
+        isMejor: true,
+        isEscalonado: true
+      });
+    }
+
+    filas.forEach(f => {
+      const clase = f.isMejor ? ' class="mejor-row"' : '';
+      const hijoBadge = f.isEscalonado
+        ? '<span class="badge badge-naranja">Escalonado</span>'
+        : '<span class="badge ' + (f.hilo === 'Al hilo' ? 'badge-verde' : 'badge-gris') + '">' + f.hilo + '</span>';
+      const mejorBadge = f.isMejor ? ' <span class="badge badge-verde">Mejor</span>' : '';
+      const filasCol = f.isEscalonado ? f.filasCol : `${f.r.fil} × ${f.r.col}`;
+      const total = f.isEscalonado ? f.total : f.r.total;
+      const sobrante = f.isEscalonado ? f.sobrante : `${fmt(f.r.sobW)} × ${fmt(f.r.sobH)} cm`;
+      tblHTML += `<tr${clase}>
+        <td>${f.label}${mejorBadge}</td>
+        <td>${filasCol}</td>
+        <td><strong>${total}</strong></td>
+        <td>${sobrante}</td>
+        <td>${hijoBadge}</td>
+      </tr>`;
+    });
+    $('tblOrientaciones').innerHTML = tblHTML;
+
+    // Escalonado
+    const cardEsc = $('cardEscalonado');
+    const resEsc  = $('resEscalonado');
+    if (esc && esc.mejora && esc.config) {
+      cardEsc.style.display = 'block';
+      const ganancia = esc.bestEsc - esc.bestSimple;
+      const pliEsc = qty > 0 ? ceil(qty / esc.bestEsc) : null;
+      resEsc.innerHTML = `
+        <div class="info-row">
+          <span class="info-label">${esc.config.desc1}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">${esc.config.desc2}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Total escalonado</span>
+          <span class="info-value highlight">${esc.bestEsc} piezas/pliego <span class="badge badge-naranja">+${ganancia} vs simple</span></span>
+        </div>
+        ${pliEsc ? `<div class="info-row"><span class="info-label">Pliegos (escalonado)</span><span class="info-value highlight">${pliEsc} pliegos para ${qty} piezas</span></div>` : ''}
+      `;
+      dibujarSVGEscalonado(esc.config);
+    } else {
+      cardEsc.style.display = 'block';
+      resEsc.innerHTML = `<div class="info-row"><span class="info-label">Sin mejora por escalonado — la distribución uniforme ya es óptima.</span></div>`;
+      dibujarSVG(mejorSimpleOrient.pw, mejorSimpleOrient.ph, '');
+    }
+
+    // Sobrante aprovechable
+    const cardSob = $('cardSobrante');
+    const resSob  = $('resSobrante');
+    const { pw: bpw, ph: bph } = mejorSimpleOrient;
+    const extras = calcSobrante(bpw, bph);
+
+    if (extras.length > 0) {
+      cardSob.style.display = 'block';
+      $('cardSobranteTitle').textContent = 'Sobrante aprovechable';
+      let html = '';
+      extras.forEach(e => {
+        html += `<div class="info-row"><span class="info-label">${e.donde}</span><span class="info-value highlight">+${e.piezas} piezas adicionales</span></div>`;
+      });
+      resSob.innerHTML = html;
+    } else {
+      cardSob.style.display = 'none';
+    }
+  }
+
+  // Init: cargar preset por defecto
+  (function () {
+    const preset = $('presetPliego').value;
+    if (preset) { [W, H] = preset.split(',').map(Number); }
+  })();
+
+  recalcular();
+})();
+</script>
+
+{% endblock %}

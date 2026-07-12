@@ -5,10 +5,11 @@ from datetime import datetime
 from core import now_iso
 from core.db import get_db_connection, ensure_tareas_columns
 from core.horarios import (
-    segundos_laborales_transcurridos,
+    fin_autocierre_efectivo,
     inferir_turno,
+    iso_sin_segundos,
 )
-from core.autocierre_config import AUTO_CIERRE_TOTAL_HORAS
+from core.autocierre_config import AUTO_CIERRE_LIMITE_SEG, AUTO_CIERRE_TOTAL_HORAS
 from core.horas_extras import calcular_tiempo_total_y_horas_extras
 
 try:
@@ -156,17 +157,20 @@ def ejecutar_autocierre(limite_horas=AUTO_CIERRE_TOTAL_HORAS, max_batch=200):
                 continue
 
             turno = inferir_turno(dt_inicio)
-            elapsed = segundos_laborales_transcurridos(dt_inicio, ahora, turno)
-            elapsed = int(elapsed) - int(pausa_acum_db or 0)
-            elapsed = max(0, elapsed)
-
-            if elapsed < limite_seg:
+            fin_efectivo = fin_autocierre_efectivo(
+                dt_inicio=dt_inicio,
+                dt_ahora=ahora,
+                turno=turno,
+                limite_seg=limite_seg,
+                pausa_acum_seg=pausa_acum_db,
+                limite_registro_seg=AUTO_CIERRE_LIMITE_SEG,
+            )
+            if not fin_efectivo:
                 continue
 
             ahora_iso = now_iso().strip()
-            inicio = str(inicio_db).strip() or ahora_iso
-
-            fin = ahora_iso
+            inicio = iso_sin_segundos(str(inicio_db).strip() or ahora_iso)
+            fin = fin_efectivo.strftime("%Y-%m-%d %H:%M:%S")
 
             # Calcular tiempo_total
             tiempo_total = ""

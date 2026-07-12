@@ -1,0 +1,95 @@
+{# Widget: checklist de impresion.
+
+   Como editar:
+   - Edita solamente las filas <tr> ubicadas entre "INICIO ZONA EDITABLE" y "FIN ZONA EDITABLE".
+   - El name debe ser unico en todo el checklist.
+   - No cambies data-module="impresion" ni el bloque de responsable/fecha/observaciones.
+   - No hace falta tocar Python para guardar nuevas lineas: se guardan en checklist_modulos.data_json.
+#}
+<tbody class="module" data-module="impresion">
+                    <tr class="section-row">
+                        <td class="col-num">II</td>
+                        <td class="col-desc section-title">
+                            IMPRESIÓN (MÁQUINAS SORMZ, SORM, GTO46, FLEXO, DIGITAL...)
+                        </td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+    {# INICIO ZONA EDITABLE: agrega, elimina o renumera puntos del checklist aqui. #}
+
+                    <tr>
+                        <td class="col-num">1</td>
+                        <td class="col-desc">Se entrega paquete (Punto I)</td>
+                        <td class="col-opt"><input type="radio" name="p1_entrega_paquete" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="p1_entrega_paquete" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="p1_entrega_paquete" value="NA"></td>
+                    </tr>
+                    <tr>
+                        <td class="col-num">2</td>
+                        <td class="col-desc">
+                            Verificar planchas, OP de las planchas Vs. OP Sherpa APROBADA
+                        </td>
+                        <td class="col-opt"><input type="radio" name="p2_verificar_planchas" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="p2_verificar_planchas" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="p2_verificar_planchas" value="NA"></td>
+                    </tr>
+                    <tr>
+                        <td class="col-num">3</td>
+                        <td class="col-desc">Alistamiento Corte del papel</td>
+                        <td class="col-opt"><input type="radio" name="p3_alistamiento_corte_papel" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="p3_alistamiento_corte_papel" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="p3_alistamiento_corte_papel" value="NA"></td>
+                    </tr>
+
+                    <tr class="section-row">
+                        <td class="col-num">4</td>
+                        <td class="col-desc section-title">Control en proceso cada 50 tiros</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">4.1</td>
+                        <td class="col-desc">Tonos están dentro de cartas de colores</td>
+                        <td class="col-opt"><input type="radio" name="p41_tonos_carta_color" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="p41_tonos_carta_color" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="p41_tonos_carta_color" value="NA"></td>
+                    </tr>
+                    <tr>
+                        <td class="col-num">4.2</td>
+                        <td class="col-desc">Tonos de acuerdo a la última muestra aprobada</td>
+                        <td class="col-opt"><input type="radio" name="p42_tonos_muestra_aprobada" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="p42_tonos_muestra_aprobada" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="p42_tonos_muestra_aprobada" value="NA"></td>
+                    </tr>
+
+    {# FIN ZONA EDITABLE. Mantener el bloque siguiente para que guarde responsable, fecha y observaciones. #}
+
+                    <tr class="footer-row">
+                        <td colspan="3" class="footer-cell">
+                            <span class="footer-label">RESPONSABLE:</span>
+                            <input
+                              type="text"
+                              name="responsable_imp"
+                              class="footer-input responsable-field"
+                              value="{{ usuario }}"
+                            >
+
+                        </td>
+                        <td colspan="2" class="footer-cell footer-date">
+                            <span class="footer-label">FECHA:</span>
+                            <input type="text" name="fecha_imp" class="footer-input date-field" value="{{ fecha_checklist|default('') }}" readonly>
+                        </td>
+                    </tr>
+                    <tr class="footer-row">
+                        <td colspan="5" class="footer-cell">
+                            <span class="footer-label">OBSERVACIONES:</span>
+                            <textarea name="observaciones_imp" rows="2" class="footer-textarea"></textarea>
+                        </td>
+                    </tr>
+
+                    <tr class="spacer-row"><td colspan="5"></td></tr>
+                </tbody>

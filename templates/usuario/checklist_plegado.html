@@ -1,0 +1,100 @@
+{# templates/usuario/checklist_plegado.html #}
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="max-width: 700px; margin-top: 25px;">
+
+    <form id="checklist-plegado" method="post" action="">
+        <input type="hidden" name="id" value="{{ tarea_id or '' }}">
+        <input type="hidden" name="op_no" value="{{ op_no or '' }}">
+        <input type="hidden" name="proceso" value="{{ proceso or 'PLEGADO' }}">
+        <input type="hidden" name="modulo" id="modulo-hidden" value="plegado">
+
+        <div class="checklist-wrap">
+            <div class="checklist-title">
+                <h3 style="margin:0; text-align:center; color:#0f6a4f; font-weight:800;">
+                    CHECKLIST: PLEGADO
+                </h3>
+            </div>
+
+            <table class="checklist-table">
+                <thead>
+                    <tr>
+                        <th class="col-num"></th>
+                        <th class="col-desc">DESCRIPCIÓN</th>
+                        <th class="col-opt">SI</th>
+                        <th class="col-opt">NO</th>
+                        <th class="col-opt">N/A</th>
+                    </tr>
+                </thead>
+                {#
+                    GUIA PARA EDITAR ESTE CHECKLIST:
+                    Las filas del checklist NO se modifican en este archivo.
+                    Para agregar, quitar o renumerar lineas, abre:
+                    templates/usuario/widgets/plegado.html
+                #}
+                {% include "usuario/widgets/plegado.html" %}
+            </table>
+
+            <div class="meta-bottom">
+                <div><span class="lbl">OP:</span> <strong>{{ op_no or 'SIN OP' }}</strong></div>
+            </div>
+
+            <div class="checklist-actions">
+                <button type="submit" class="btn-guardar-checklist">Guardar checklist</button>
+            </div>
+        </div>
+    </form>
+
+    <style>
+        #checklist-plegado { margin-top: 15px; }
+        .checklist-wrap{ background:#fff; border:2px solid #2f2f2f; padding:8px; border-radius:6px; }
+        .checklist-table{ width:100%; border-collapse:collapse; table-layout:fixed; font-size:13px; }
+        .checklist-table th, .checklist-table td{ border:1px solid #3b3b3b; padding:4px 6px; vertical-align:middle; }
+        .checklist-table thead th{ text-align:center; font-weight:700; background:#f2f2f2; color:#000 !important; opacity:1 !important; visibility:visible !important; }
+        .col-num{ width:7%; text-align:center; }
+        .col-desc{ width:68%; }
+        .col-opt{ width:8.3%; text-align:center; }
+        .section-row td{ font-weight:700; }
+        .section-title{ text-transform:uppercase; }
+        .opt-head{ background:#f2f2f2; }
+        .footer-row td{ background:#fafafa; font-weight:700; }
+        .footer-cell{ padding:8px 6px; }
+        .footer-label{ display:inline-block; margin-right:8px; }
+        .footer-input{ width:70%; max-width:320px; border:none; border-bottom:1px solid #3b3b3b; outline:none; padding:2px 4px; background:transparent; font-weight:400; }
+        .footer-textarea{ width:100%; border:1px solid #3b3b3b; padding:6px; font-weight:400; resize:vertical; }
+        .checklist-actions{ margin-top:10px; text-align:right; }
+        .btn-guardar-checklist{ background-color:#0f6a4f; color:#fff; border:none; border-radius:6px; padding:6px 14px; cursor:pointer; }
+        .btn-guardar-checklist:hover{ opacity:.9; }
+        .spacer-row td{ height:12px; border:none !important; background:transparent !important; padding:0 !important; }
+        .checklist-table td.col-opt{ position:relative; overflow:hidden !important; padding:0 !important; text-align:center; }
+        .checklist-table td.col-opt input[type="radio"]{ position:relative !important; left:0 !important; right:0 !important; margin:0 auto !important; display:inline-block !important; width:auto !important; max-width:16px !important; min-width:0 !important; }
+        .footer-date .date-field{ width:96% !important; max-width:none !important; }
+        .meta-bottom{ margin-top:8px; display:flex; gap:16px; align-items:center; justify-content:flex-start; font-size:13px; }
+        .meta-bottom .lbl{ font-weight:700; }
+    </style>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('checklist-plegado');
+        const opHidden = document.querySelector('input[name="op_no"]');
+        const params = new URLSearchParams(window.location.search);
+        const tareaQS = (params.get('tarea') || params.get('proceso') || 'PLEGADO').trim();
+        const usuario = "{{ (usuario or '')|e }}".trim();
+
+        document.querySelectorAll('.responsable-field').forEach(inp => {
+          if (!inp.value && usuario) inp.value = usuario;
+        });
+
+        if (opHidden && opHidden.value) sessionStorage.setItem('opChecklist', opHidden.value);
+        if (tareaQS) sessionStorage.setItem('tareaChecklist', tareaQS);
+
+        if (form) {
+          form.addEventListener('submit', function () {
+            const op2 = document.querySelector('input[name="op_no"]');
+            if (op2 && op2.value) sessionStorage.setItem('opChecklist', op2.value);
+          });
+        }
+      });
+    </script>
+</div>
+{% endblock %}

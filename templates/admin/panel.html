@@ -198,11 +198,9 @@
             <input type="text" name="fakeuser" style="display:none">
             <input type="password" name="fakepass" style="display:none">
 
-            <input type="password" id="input_clave_tecnica" name="fake_tecnica" placeholder="Clave tecnica"
+            <input type="password" id="input_clave_tecnica" name="clave_tecnica" placeholder="Clave tecnica"
               style="padding:4px;" required autocomplete="new-password" autocorrect="off" autocapitalize="none"
-              spellcheck="false" oninput="document.getElementById('real_clave_tecnica').value=this.value">
-
-            <input type="hidden" id="real_clave_tecnica" name="clave_tecnica" value="">
+              spellcheck="false">
             <button type="submit" class="btn btn-dark btn-sm">Modo Tecnico</button>
           </form>
 

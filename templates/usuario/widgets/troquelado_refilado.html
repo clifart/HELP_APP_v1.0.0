@@ -1,0 +1,118 @@
+{# Widget: checklist de TROQUELADO Y REPUJADO.
+
+   PARA AGREGAR O QUITAR LINEAS DEL CHECKLIST:
+   - Edita solamente las filas <tr> ubicadas entre "INICIO ZONA EDITABLE" y "FIN ZONA EDITABLE".
+   - Cada nueva linea debe tener 3 radios con el mismo atributo name.
+   - El name debe ser unico en todo el checklist, por ejemplo: troq_estado_cortes.
+   - Deja required solo en el primer radio de cada linea.
+   - No cambies data-module="troquelado_refilado", los nombres op_no/proceso/modulo ni el bloque de responsable/fecha/observaciones.
+   - No hace falta tocar Python para guardar nuevas lineas: se guardan en checklist_modulos.data_json.
+#}
+<tbody class="module" data-module="troquelado_repujado">
+    <tr class="section-row">
+        <td class="col-num">VI</td>
+        <td class="col-desc section-title">TROQUELADO Y REPUJADO</td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+    </tr>
+
+    {# INICIO ZONA EDITABLE: agrega, elimina o renumera puntos del checklist aqui. #}
+    <tr>
+        <td class="col-num">1</td>
+        <td class="col-desc">Se entrega paquete (Punto I)</td>
+        <td class="col-opt"><input type="radio" name="troq_entrega_paquete" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="troq_entrega_paquete" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="troq_entrega_paquete" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">2</td>
+        <td class="col-desc">Verificacion de la calidad del Troquel</td>
+        <td class="col-opt"><input type="radio" name="troq_verif_calidad" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="troq_verif_calidad" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="troq_verif_calidad" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">2.1</td>
+        <td class="col-desc">Estado de los Cortes</td>
+        <td class="col-opt"><input type="radio" name="troq_estado_cortes" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="troq_estado_cortes" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="troq_estado_cortes" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">2.2</td>
+        <td class="col-desc">Estado de las grafas</td>
+        <td class="col-opt"><input type="radio" name="troq_estado_grafas" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="troq_estado_grafas" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="troq_estado_grafas" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">2.3</td>
+        <td class="col-desc">Estado Material</td>
+        <td class="col-opt"><input type="radio" name="troq_estado_material" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="troq_estado_material" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="troq_estado_material" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">2.4</td>
+        <td class="col-desc">Estado Troquelado</td>
+        <td class="col-opt"><input type="radio" name="troq_estado_troquelado" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="troq_estado_troquelado" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="troq_estado_troquelado" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">3</td>
+        <td class="col-desc">Control en proceso (CADA 50 TIROS)</td>
+        <td class="col-opt"><input type="radio" name="troq_control_proceso" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="troq_control_proceso" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="troq_control_proceso" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">3.1</td>
+        <td class="col-desc">Corte del rasgo</td>
+        <td class="col-opt"><input type="radio" name="troq_corte_rasgo" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="troq_corte_rasgo" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="troq_corte_rasgo" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">3.2</td>
+        <td class="col-desc">Posicion de pegues por cantidad</td>
+        <td class="col-opt"><input type="radio" name="troq_posicion_pegues" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="troq_posicion_pegues" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="troq_posicion_pegues" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">3.3</td>
+        <td class="col-desc">Posicion de cartucheras de material impreso (papel)</td>
+        <td class="col-opt"><input type="radio" name="troq_posicion_cartucheras" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="troq_posicion_cartucheras" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="troq_posicion_cartucheras" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">4</td>
+        <td class="col-desc">Repujado</td>
+        <td class="col-opt"><input type="radio" name="troq_repujado" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="troq_repujado" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="troq_repujado" value="NA"></td>
+    </tr>
+    {# FIN ZONA EDITABLE #}
+
+    <tr class="footer-row">
+        <td colspan="3" class="footer-cell">
+            <span class="footer-label">RESPONSABLE:</span>
+            <input type="text" name="responsable_troq" class="footer-input responsable-field" value="" readonly>
+        </td>
+        <td colspan="2" class="footer-cell footer-date">
+            <span class="footer-label">FECHA:</span>
+            <input type="text" name="fecha_troq" class="footer-input date-field" value="{{ fecha_checklist|default('') }}" readonly>
+        </td>
+    </tr>
+    <tr class="footer-row">
+        <td colspan="5" class="footer-cell">
+            <span class="footer-label">OBSERVACIONES:</span>
+            <textarea name="observaciones_troq" rows="2" class="footer-textarea"></textarea>
+        </td>
+    </tr>
+
+    <tr class="spacer-row"><td colspan="5"></td></tr>
+</tbody>

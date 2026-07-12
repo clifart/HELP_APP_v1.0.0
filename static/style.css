@@ -204,6 +204,12 @@ tr:nth-child(even) {
   margin-bottom: 10px;
 }
 
+.login-logo {
+  width: min(240px, 78%);
+  margin: 0 auto 14px;
+  object-fit: contain;
+}
+
 .login-form {
   display: flex;
   flex-direction: column;
@@ -940,4 +946,298 @@ body {
 
 .ha-btnbox__header {
   border-bottom-color: #1f8f5f !important;
+}
+
+/* === SISTEMA VISUAL GLOBAL HELP_APP === */
+:root {
+  --ha-radius: 8px;
+  --ha-control-h: 36px;
+}
+
+body.helpapp-ui {
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.helpapp-ui .container,
+.helpapp-ui .helpapp-admin-frame {
+  box-sizing: border-box;
+}
+
+.helpapp-ui .panel-header {
+  margin: 24px auto 18px;
+  text-align: center;
+}
+
+.helpapp-ui .panel-header h1,
+.helpapp-ui .panel-header h2,
+.helpapp-ui .panel-header h3,
+.helpapp-ui h2.text-center {
+  margin: 0 0 8px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.helpapp-ui .panel-header p,
+.helpapp-ui .saludo-usuario {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.helpapp-ui input:not([type="radio"]):not([type="checkbox"]):not([type="hidden"]),
+.helpapp-ui select,
+.helpapp-ui textarea,
+.helpapp-ui .form-control,
+.helpapp-ui .form-select {
+  box-sizing: border-box;
+  min-height: var(--ha-control-h);
+  border-radius: var(--ha-radius);
+  padding: 7px 10px;
+  font: inherit;
+  line-height: 1.25;
+}
+
+.helpapp-ui textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+
+.helpapp-ui button,
+.helpapp-ui .btn,
+.helpapp-ui [class^="btn-"],
+.helpapp-ui [class*=" btn-"] {
+  box-sizing: border-box;
+  min-height: var(--ha-control-h);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--ha-radius);
+  padding: 7px 13px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.helpapp-ui button:disabled,
+.helpapp-ui .btn.disabled,
+.helpapp-ui [aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.helpapp-ui .table-responsive,
+.helpapp-ui .table-container,
+.helpapp-ui .tabla-tareas-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 10px;
+}
+
+.helpapp-ui .table,
+.helpapp-ui #tablaTareas {
+  width: 100%;
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.helpapp-ui .table th,
+.helpapp-ui #tablaTareas th {
+  height: 42px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.helpapp-ui .table td,
+.helpapp-ui #tablaTareas td {
+  height: 50px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  vertical-align: middle;
+}
+
+.helpapp-ui #tablaTareas th:nth-child(3),
+.helpapp-ui #tablaTareas th:nth-child(4),
+.helpapp-ui #tablaTareas td:nth-child(3),
+.helpapp-ui #tablaTareas td:nth-child(4) {
+  text-align: left;
+}
+
+.helpapp-ui #tablaTareas th:not(:nth-child(3)):not(:nth-child(4)),
+.helpapp-ui #tablaTareas td:not(:nth-child(3)):not(:nth-child(4)) {
+  text-align: center;
+}
+
+.helpapp-ui .cantidad-input {
+  width: 90px;
+  height: 32px;
+  min-height: 32px !important;
+  padding: 4px 8px !important;
+  text-align: center;
+}
+
+.helpapp-ui .fin-aut-display,
+.helpapp-ui .sin-cantidad {
+  min-height: 32px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.05;
+}
+
+.helpapp-ui .acciones-tarea {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  white-space: nowrap;
+}
+
+.helpapp-ui .acciones-tarea > .btn,
+.helpapp-ui .acciones-tarea > .btn-checklist {
+  width: 72px;
+  min-width: 72px;
+  height: 32px;
+  min-height: 32px;
+  margin: 0 !important;
+  padding: 5px 6px;
+  font-size: 12px;
+}
+
+.helpapp-ui .acciones-tarea > .btn-sin-checklist {
+  font-size: 9px;
+}
+
+.helpapp-ui .checklist-wrap {
+  border-radius: 12px !important;
+  padding: 14px !important;
+}
+
+.helpapp-ui .checklist-title h3 {
+  margin: 0 0 12px !important;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.helpapp-ui .checklist-table {
+  margin: 0;
+  font-size: 13px;
+}
+
+.helpapp-ui .checklist-table thead th {
+  height: 38px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.helpapp-ui .checklist-table td {
+  vertical-align: middle;
+  line-height: 1.3;
+}
+
+.helpapp-ui .checklist-table .col-desc {
+  text-align: left;
+}
+
+.helpapp-ui .checklist-table .col-opt {
+  text-align: center;
+}
+
+.helpapp-ui .checklist-table input[type="radio"],
+.helpapp-ui .checklist-table input[type="checkbox"] {
+  width: 17px !important;
+  height: 17px !important;
+  margin: 0 auto !important;
+  vertical-align: middle;
+}
+
+.helpapp-ui .checklist-actions,
+.helpapp-ui .meta-bottom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.helpapp-ui .checklist-actions {
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.helpapp-ui .meta-bottom {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.helpapp-ui .ha-card,
+.helpapp-ui .ha-btnbox,
+.helpapp-ui .section,
+.helpapp-ui .card {
+  border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+  body.helpapp-ui { font-size: 13px; }
+
+  .helpapp-ui .container {
+    width: 96%;
+    margin: 12px auto;
+    padding: 12px;
+  }
+
+  .helpapp-ui .panel-header {
+    margin: 16px auto 12px;
+  }
+
+  .helpapp-ui .table th,
+  .helpapp-ui .table td,
+  .helpapp-ui #tablaTareas th,
+  .helpapp-ui #tablaTareas td {
+    padding: 6px 7px;
+    font-size: 12px;
+  }
+
+  .helpapp-ui .acciones-tarea {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+  }
+
+  .helpapp-ui .acciones-tarea > .btn,
+  .helpapp-ui .acciones-tarea > .btn-checklist {
+    width: 100%;
+    min-width: 86px;
+  }
+
+  .helpapp-ui .checklist-wrap {
+    padding: 8px !important;
+  }
+
+  .helpapp-ui .checklist-title h3 {
+    font-size: 17px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .helpapp-ui *,
+  .helpapp-ui *::before,
+  .helpapp-ui *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

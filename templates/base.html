@@ -27,7 +27,7 @@
 
 
   <!-- CSS global -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20260712-ui2') }}">
 
   <!-- Librería para animaciones (opcional pero bonita) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
@@ -37,7 +37,7 @@
 </head>
 
 
-<body>
+<body class="helpapp-ui">
 
   <!-- 🌟 BLOQUE UNIVERSAL DE MENSAJES FLASH -->
   {% with messages = get_flashed_messages(with_categories=true) %}

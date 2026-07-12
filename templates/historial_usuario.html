@@ -1,5 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
+{% macro fmt_fecha_min(v) -%}
+  {%- set s = (v or '')|string|trim -%}
+  {%- if s and (s|length) >= 16 and s[4] == '-' and s[7] == '-' -%}{{ s[:16] }}
+  {%- elif s and (s|length) >= 5 and s[2] == ':' -%}{{ s[:5] }}
+  {%- else -%}{{ s or '-' }}{%- endif -%}
+{%- endmacro %}
+{% macro fmt_hhmm(v, default='00:00') -%}
+  {%- set s = (v or '')|string|trim -%}
+  {%- if s and (s|length) >= 5 and s[2] == ':' -%}{{ s[:5] }}
+  {%- elif s and (s|length) >= 16 and s[4] == '-' and s[7] == '-' -%}{{ s[11:16] }}
+  {%- else -%}{{ s or default }}{%- endif -%}
+{%- endmacro %}
 <div class="container mt-4">
 
   <!-- 🔹 ENCABEZADO -->
@@ -46,19 +58,19 @@
         <td>{{ t.cantidad }}</td>
 
         <!-- Hora de inicio guardada en historial_tareas.hora_inicio -->
-        <td>{{ t.hora_inicio or '-' }}</td>
+        <td>{{ fmt_fecha_min(t.hora_inicio) }}</td>
 
         <!-- Hora de finalización guardada en historial_tareas.hora_finalizacion -->
-        <td>{{ t.hora_finalizacion or '-' }}</td>
+        <td>{{ fmt_fecha_min(t.hora_finalizacion) }}</td>
 
         <!-- Tiempo total usado guardado en historial_tareas.tiempo_total -->
-        <td>{{ t.tiempo_total or '-' }}</td>
+        <td>{{ fmt_hhmm(t.tiempo_total, '-') }}</td>
 
         <!-- Horas extras guardadas en historial_tareas.horas_extras -->
-        <td>{{ t.horas_extras or '00:00:00' }}</td>
+        <td>{{ fmt_hhmm(t.horas_extras) }}</td>
 
         <!-- Tiempo acumulado en pausa guardado en historial_tareas.tiempo_pausado -->
-        <td>{{ t.tiempo_pausado or '00:00:00' }}</td>
+        <td>{{ fmt_hhmm(t.tiempo_pausado) }}</td>
 
         <!-- Indicador de cierre -->
         <td>{{ 'Auto' if (t.cierre_automatico or 0)|int == 1 else 'Manual' }}</td>

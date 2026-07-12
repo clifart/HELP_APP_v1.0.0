@@ -154,14 +154,14 @@ def panel():
 
     # âœ… CAMBIO ÃšNICO: renderizar el panel V2 (nuevo look)
     return render_template(
-        "admin_v2/panel.html",
+        "admin/panel.html",
         total_usuarios=total_usuarios,
         total_admins=total_admins,
         total_tareas=total_tareas,
         usuarios=usuarios,
         tareas=tareas
     )
-# âœ… Ruta de prueba directa (por si el login redirige raro)
+# Ruta de compatibilidad por si existe algun acceso guardado a /panel_v2.
 @admin_bp.route("/panel_v2")
 def panel_v2():
     return panel()

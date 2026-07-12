@@ -26,56 +26,13 @@
                         <th class="col-opt">N/A</th>
                     </tr>
                 </thead>
-
-                <tbody class="module" data-module="pegue">
-                    <tr class="section-row">
-                        <td class="col-num">I</td>
-                        <td class="col-desc section-title">PEGADO DE CAJAS</td>
-                        <td class="col-opt opt-head"></td>
-                        <td class="col-opt opt-head"></td>
-                        <td class="col-opt opt-head"></td>
-                    </tr>
-
-                    {% set items = [
-                        ("1", "Se entrega paquete (Punto I)", "pegue_entrega_paquete"),
-                        ("2", "Verificacion del troquelado de las cajas", "pegue_verificacion_troquelado"),
-                        ("3", "Verificacion del pegue de las aletas", "pegue_verificacion_aletas"),
-                        ("4", "Verificar que no se queden pegadas ni por dentro ni por fuera (Exceso de pegante)", "pegue_exceso_pegante"),
-                        ("5", "Controlar que no se rayen por rose en el transporte por bandas", "pegue_control_rose_bandas")
-                    ] %}
-
-                    {% for n, desc, key in items %}
-                    <tr>
-                        <td class="col-num">{{ n }}</td>
-                        <td class="col-desc">{{ desc }}</td>
-                        <td class="col-opt"><input type="radio" name="{{ key }}" value="SI" required></td>
-                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NO"></td>
-                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NA"></td>
-                    </tr>
-                    {% endfor %}
-
-                    <tr class="footer-row">
-                        <td colspan="3" class="footer-cell">
-                            <span class="footer-label">RESPONSABLE:</span>
-                            <input
-                              type="text"
-                              name="responsable_pegue"
-                              class="footer-input responsable-field"
-                              value="{{ usuario }}"
-                            >
-                        </td>
-                        <td colspan="2" class="footer-cell footer-date">
-                            <span class="footer-label">FECHA:</span>
-                            <input type="date" name="fecha_pegue" class="footer-input date-field">
-                        </td>
-                    </tr>
-                    <tr class="footer-row">
-                        <td colspan="5" class="footer-cell">
-                            <span class="footer-label">OBSERVACIONES:</span>
-                            <textarea name="observaciones_pegue" rows="2" class="footer-textarea"></textarea>
-                        </td>
-                    </tr>
-                </tbody>
+                {#
+                    GUIA PARA EDITAR ESTE CHECKLIST:
+                    Las filas del checklist NO se modifican en este archivo.
+                    Para agregar, quitar o renumerar lineas, abre:
+                    templates/usuario/widgets/pegue_cajas.html
+                #}
+                {% include "usuario/widgets/pegue_cajas.html" %}
             </table>
 
             <div class="meta-bottom">

@@ -26,7 +26,7 @@
                     <div class="varios-op"><strong>OP No.</strong> {{ op_no or 'SIN OP' }}</div>
                     <label class="varios-fecha">
                         <span>FECHA:</span>
-                        <input type="date" name="fecha_varios" required>
+                        <input type="text" name="fecha_varios" required value="{{ fecha_checklist|default('') }}" readonly>
                     </label>
                 </div>
                 <button type="submit" class="btn-guardar-checklist">Guardar checklist</button>

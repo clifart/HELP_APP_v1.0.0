@@ -1,0 +1,137 @@
+{# Widget: checklist de encuadernacion.
+
+   PARA AGREGAR O QUITAR LINEAS DEL CHECKLIST:
+   - Edita solamente las filas <tr> ubicadas entre "INICIO ZONA EDITABLE" y "FIN ZONA EDITABLE".
+   - Para una linea SI/NO/N/A usa 3 radios con el mismo atributo name.
+   - El name debe ser unico en todo el checklist, por ejemplo: enc_color_carta.
+   - Deja required solo en el primer radio de cada linea obligatoria.
+   - No cambies los data-module ni los bloques de responsable/fecha/observaciones.
+   - No hace falta tocar Python para guardar nuevas lineas: se guardan en checklist_modulos.data_json.
+#}
+<tbody class="module" data-module="encuadernacion">
+    <tr class="section-row">
+        <td class="col-num">VII</td>
+        <td class="col-desc section-title">ENCUADERNACION</td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+    </tr>
+
+    <tr>
+        <td class="col-num">1</td>
+        <td class="col-desc">Se entrega paquete (Punto I)</td>
+        <td class="col-opt"><input type="radio" name="enc_entrega_paquete" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="enc_entrega_paquete" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="enc_entrega_paquete" value="NA"></td>
+    </tr>
+
+    {# INICIO ZONA EDITABLE: agrega, elimina o renumera puntos del checklist aqui. #}
+    {% set enc_items = [
+        ("1.1", "Orden de Produccion", "enc_op"),
+        ("2.1", "Color (Dentro de carta de color)", "enc_color_carta"),
+        ("2.2", "Plastificado", "enc_plastificado"),
+        ("2.3", "Brillo", "enc_brillo"),
+        ("3.1", "Rotulos", "enc_rotulos"),
+        ("3.2", "Certificados", "enc_certificados"),
+        ("3.3", "Cartas de Colores (Producto Nuevo o con cambios)", "enc_cartas_colores"),
+        ("3.4", "Remision", "enc_remision"),
+        ("4.1", "Contado", "enc_contado"),
+        ("4.2", "Fajillado", "enc_fajillado")
+    ] %}
+
+    {% for n, desc, key in enc_items %}
+    {% if n == "2.1" %}
+    <tr class="section-row">
+        <td class="col-num">2</td>
+        <td class="col-desc">Revisar producto</td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+    </tr>
+    {% endif %}
+    {% if n == "3.1" %}
+    <tr class="section-row">
+        <td class="col-num">3</td>
+        <td class="col-desc">Papeleria</td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+    </tr>
+    {% endif %}
+    {% if n == "4.1" %}
+    <tr class="section-row">
+        <td class="col-num">4</td>
+        <td class="col-desc">Empaque</td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td class="col-num">{{ n }}</td>
+        <td class="col-desc">{{ desc }}</td>
+        <td class="col-opt"><input type="radio" name="{{ key }}" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="{{ key }}" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="{{ key }}" value="NA"></td>
+    </tr>
+    {% endfor %}
+    {# FIN ZONA EDITABLE #}
+
+</tbody>
+
+                <!-- ===================================================== -->
+                <!-- VIII. ENTREGA Y CIERRE: dentro de ENCUADERNACION -->
+                <!-- ===================================================== -->
+                <tbody class="module" data-module="encuadernacion">
+                    <tr class="section-row">
+                        <td class="col-num">VIII</td>
+                        <td class="col-desc section-title">ENTREGA Y CIERRE DE ORDEN DE PRODUCCIÓN</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+                    {% set ec_items = [
+                    ("1", "Verificar", "ec_verificar"),
+                    ("1.1", "No. Orden de compra", "ec_oc"),
+                    ("1.2", "Código", "ec_codigo"),
+                    ("1.3", "Descripción", "ec_descripcion"),
+                    ("1.4", "Reporte de tiempos y seguimiento OP", "ec_reporte_tiempos"),
+                    ("1.5", "Verificar Proceso Estándar Vs. Proceso Real", "ec_proceso_estandar_vs_real"),
+                    ("1.6", "Verificar proceso OP Vs. Proceso Estándar", "ec_proceso_op_vs_estandar"),
+                    ("1.7", "Cerrar OP", "ec_cerrar_op"),
+                    ("1.8", "Adjuntar papeles completos punto I", "ec_adjuntar_papeles"),
+                    ("2", "Solicitar certificación previa a transporte si aplica", "ec_certificacion_transporte"),
+                    ("3", "Solicitar transporte", "ec_solicitar_transporte"),
+                    ("4", "Verificar que el material llegó a los destinos", "ec_verificar_llego")
+                    ] %}
+
+                    {% for n, desc, key in ec_items %}
+                    <tr>
+                        <td class="col-num">{{ n }}</td>
+                        <td class="col-desc">{{ desc }}</td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NA"></td>
+                    </tr>
+                    {% endfor %}
+
+                    <tr class="footer-row">
+                        <td colspan="3" class="footer-cell">
+                            <span class="footer-label">RESPONSABLE:</span>
+                            <input type="text" name="responsable_ec" class="footer-input responsable-field" value="" readonly>
+                        </td>
+                        <td colspan="2" class="footer-cell footer-date">
+                            <span class="footer-label">FECHA:</span>
+                            <input type="text" name="fecha_ec" class="footer-input date-field" value="{{ fecha_checklist|default('') }}" readonly>
+                        </td>
+                    </tr>
+                    <tr class="footer-row">
+                        <td colspan="5" class="footer-cell">
+                            <span class="footer-label">OBSERVACIONES:</span>
+                            <textarea name="observaciones_ec" rows="2" class="footer-textarea"></textarea>
+                        </td>
+                    </tr>
+                </tbody>
+
+

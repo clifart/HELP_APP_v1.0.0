@@ -2,8 +2,11 @@ from flask import render_template, request, redirect, url_for, session, flash, j
 from . import usuario_bp
 from core.db import get_db_connection, ensure_tareas_columns
 from core.horarios import (
-    segundos_laborales_transcurridos,
+    fin_autocierre_efectivo,
+    fin_ventana_actual,
     inferir_turno,
+    iso_sin_segundos,
+    segundos_laborales_transcurridos,
 )
 from core.autocierre_config import AUTO_CIERRE_GRACIA_SEG, AUTO_CIERRE_LIMITE_SEG
 from core.horas_extras import calcular_tiempo_total_y_horas_extras
@@ -103,7 +106,7 @@ def _omite_checklist_y_cantidad(nombre: str) -> bool:
     Procesos exentos de checklist y cantidad para finalizar.
     """
     norm = _normalizar_proceso(nombre)
-    return norm in {"ALISTAMIENTO", "DESCARTONE", "REPROCESO"}
+    return norm in {"ALISTAMIENTO", "ALISTAMIENTO PRE IMPRESION", "DESCARTONE", "MANTENIMIENTO PREVENTIVO", "REPROCESO"}
 
 
 def _omite_cantidad(nombre: str) -> bool:
@@ -522,12 +525,18 @@ def panel():
 
         # Cálculo de tiempo real para el frontend (transcurrir el tiempo)
         seg_trans_neto = 0
-        if estado == "En curso":
+        fin_aut_hhmm = ""
+        # Mantener visible FIN AUTO para toda tarea activa, aunque esté pausada.
+        if estado in ("En curso", "Pausada") and not str(fin).strip():
             try:
                 dt_ini = datetime.fromisoformat(str(inicio).replace("Z", ""))
                 trno = inferir_turno(dt_ini)
-                seg_trans_bruto = segundos_laborales_transcurridos(dt_ini, datetime.now(), trno)
-                seg_trans_neto = max(0, seg_trans_bruto - pausa_acum_db)
+                if estado == "En curso":
+                    seg_trans_bruto = segundos_laborales_transcurridos(dt_ini, datetime.now(), trno)
+                    seg_trans_neto = max(0, seg_trans_bruto - pausa_acum_db)
+                fin_turno = fin_ventana_actual(dt_ini, trno)
+                if fin_turno:
+                    fin_aut_hhmm = fin_turno.strftime("%H:%M")
             except Exception:
                 pass
 
@@ -538,6 +547,7 @@ def panel():
             "tarea": tarea,
             "inicio": str(inicio).strip(),   # ✅ CRUDO (NO formatear aquí)
             "fin": str(fin).strip(),         # ✅ CRUDO (NO formatear aquí)
+            "fin_aut_hhmm": fin_aut_hhmm,
             "cantidad": int(cantidad or 0),
             "estado": estado,                # ✅ IMPORTANTE para data-estado
             "horario_extendido": int(horario_extendido or 0),
@@ -625,7 +635,7 @@ def validar_inicio():
             "ok": True,
             "needs_confirm": True,
             "reason": "sin_impresion",
-            "msg": "⚠️ Esta OP aún NO tiene una IMPRESIÓN finalizada. ¿Deseas continuar sin impresión?"
+            "msg": "⚠️ Este es el inicio de producción para esta OP ¿Desea continuar?"
         }), 200
 
     if hay_activa:
@@ -697,7 +707,7 @@ def agregar():
     cur.execute("""
         INSERT INTO tareas (titulo, descripcion, proceso, asignado_a, inicio, estado, cantidad)
         VALUES (?, ?, ?, ?, ?, 'En curso', 0)
-    """, (op_no, descripcion, proceso, usuario, now_iso()))
+    """, (op_no, descripcion, proceso, usuario, iso_sin_segundos(now_iso())))
     conn.commit()
     conn.close()
 
@@ -793,6 +803,9 @@ def finalizar_tarea_usuario():
         inicio = now_iso().strip()
     if not fin or fin == "-":
         fin = now_iso().strip()
+
+    inicio = iso_sin_segundos(inicio)
+    fin = iso_sin_segundos(fin)
 
     tiempo_total = ""
     horas_extras = "00:00:00"
@@ -1079,25 +1092,31 @@ def autocerrar_tarea_usuario():
         conn.close()
         return jsonify({"ok": False, "msg": "La tarea está en PAUSA"}), 400
 
-    # ✅ inicio/fin: usar BD si existe
+    # inicio/fin: usar BD si existe y cerrar en el vencimiento real del turno/limite.
     ahora_iso = now_iso().strip()
-    inicio = str(inicio_db).strip() if inicio_db else ahora_iso
-    fin = ahora_iso
+    inicio = iso_sin_segundos(str(inicio_db).strip() if inicio_db else ahora_iso)
+    fin = iso_sin_segundos(ahora_iso)
 
-    # Validar 8 horas laborables segun turno.
     try:
         dt_inicio = datetime.fromisoformat(inicio.replace("Z", ""))
-        dt_fin = datetime.fromisoformat(fin.replace("Z", ""))
+        dt_ahora = datetime.fromisoformat(ahora_iso.replace("Z", ""))
         turno = inferir_turno(dt_inicio)
-        elapsed = segundos_laborales_transcurridos(dt_inicio, dt_fin, turno)
-        elapsed = int(elapsed) - int(pausa_acum_db or 0)
-        elapsed = max(0, elapsed)
-        if (elapsed < AUTO_CIERRE_LIMITE_SEG) and (not force_test):
+        fin_efectivo = fin_autocierre_efectivo(
+            dt_inicio=dt_inicio,
+            dt_ahora=dt_ahora,
+            turno=turno,
+            limite_seg=AUTO_CIERRE_LIMITE_SEG,
+            pausa_acum_seg=pausa_acum_db,
+        )
+        if fin_efectivo:
+            fin = fin_efectivo.strftime("%Y-%m-%d %H:%M:%S")
+        elif not force_test:
             conn.close()
-            return jsonify({"ok": False, "msg": "La tarea requiere 8 horas de actividad para autocierre."}), 400
+            return jsonify({"ok": False, "msg": "La tarea aun no cumple condiciones de autocierre."}), 400
     except Exception:
-        # Si no podemos validar, seguimos con autocierre (best-effort)
-        pass
+        if not force_test:
+            conn.close()
+            return jsonify({"ok": False, "msg": "No se pudo validar el autocierre."}), 400
 
     tiempo_total = ""
     horas_extras = "00:00:00"
@@ -1572,10 +1591,22 @@ def checklist_impresion():
 
     from jinja2 import TemplateNotFound
     template_name = "usuario/checklist_impresion.html"
+    if modulo_activo == "corte" or es_corte:
+        template_name = "usuario/checklist_corte_papel.html"
+    if modulo_activo == "plastificado":
+        template_name = "usuario/checklist_plastificado.html"
+    if modulo_activo == "brillo":
+        template_name = "usuario/checklist_brillo.html"
+    if modulo_activo == "plegado":
+        template_name = "usuario/checklist_plegado.html"
+    if modulo_activo == "troquelado_refilado":
+        template_name = "usuario/checklist_troquelado_refilado.html"
     if modulo_activo == "flexo":
         template_name = "usuario/checklist_flexo.html"
     if modulo_activo == "mantenimiento_sormz_sorm_barnizado" or ("sorm" in modulo_activo and "barniz" in modulo_activo):
         template_name = "usuario/checklist_mantenimiento_sormz_sorm_barnizado.html"
+    if modulo_activo == "encuadernacion":
+        template_name = "usuario/checklist_encuadernacion.html"
     if modulo_activo == "pegue" or ("pegue" in modulo_activo):
         template_name = "usuario/checklist_pegue_cajas.html"
     if modulo_activo == "varios":
@@ -1587,7 +1618,8 @@ def checklist_impresion():
             usuario=usuario,
             modulo_activo=modulo_activo,
             es_corte=es_corte,
-            tarea_id=tarea_id_int or ""
+            tarea_id=tarea_id_int or "",
+            fecha_checklist=now_iso()[:10]
         )
     except TemplateNotFound:
         return render_template(
@@ -1596,5 +1628,17 @@ def checklist_impresion():
             usuario=usuario,
             modulo_activo=modulo_activo,
             es_corte=es_corte,
-            tarea_id=tarea_id_int or ""
+            tarea_id=tarea_id_int or "",
+            fecha_checklist=now_iso()[:10]
         )
+
+# =========================
+# CALCULADORA DE CORTE DE PLIEGOS
+# =========================
+@usuario_bp.route('/calculadora-corte')
+def calculadora_corte():
+    if not _solo_usuario():
+        flash("Acceso no autorizado.", "danger")
+        return redirect(url_for('login'))
+    return render_template('usuario/calculadora_corte.html')
+

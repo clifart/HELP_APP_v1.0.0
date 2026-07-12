@@ -1,0 +1,70 @@
+{# Widget: checklist de brillo.
+
+   PARA AGREGAR O QUITAR LINEAS DEL CHECKLIST:
+   - Edita solamente las filas <tr> ubicadas entre "INICIO ZONA EDITABLE" y "FIN ZONA EDITABLE".
+   - Cada nueva linea debe tener 3 radios con el mismo atributo name.
+   - El name debe ser unico en todo el checklist, por ejemplo: brillo_mascara_acetato.
+   - Deja required solo en el primer radio de cada linea.
+   - No cambies data-module="brillo" ni el bloque de responsable/fecha/observaciones.
+   - No hace falta tocar Python para guardar nuevas lineas: se guardan en checklist_modulos.data_json.
+#}
+<tbody class="module" data-module="brillo">
+    <tr class="section-row">
+        <td class="col-num">IV</td>
+        <td class="col-desc section-title">BRILLO</td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+    </tr>
+
+    {# INICIO ZONA EDITABLE: agrega, elimina o renumera puntos del checklist aqui. #}
+    <tr>
+        <td class="col-num">1</td>
+        <td class="col-desc">Se entrega paquete (Punto I).</td>
+        <td class="col-opt"><input type="radio" name="brillo_entrega_paquete" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="brillo_entrega_paquete" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="brillo_entrega_paquete" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">2</td>
+        <td class="col-desc">Elaboración máscara de acetato para impresión.</td>
+        <td class="col-opt"><input type="radio" name="brillo_mascara_acetato" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="brillo_mascara_acetato" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="brillo_mascara_acetato" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">3</td>
+        <td class="col-desc">Verificar tamaño de espacio de reserva para codificado. </td>
+        <td class="col-opt"><input type="radio" name="brillo_reserva_codificado" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="brillo_reserva_codificado" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="brillo_reserva_codificado" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">4</td>
+        <td class="col-desc">Control en proceso cada 50 tiros.</td>
+        <td class="col-opt"><input type="radio" name="brillo_control_50" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="brillo_control_50" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="brillo_control_50" value="NA"></td>
+    </tr>
+    
+    {# FIN ZONA EDITABLE. Mantener el bloque siguiente para que guarde responsable, fecha y observaciones. #}
+
+    <tr class="footer-row">
+        <td colspan="3" class="footer-cell">
+            <span class="footer-label">RESPONSABLE:</span>
+            <input type="text" name="responsable_brillo" class="footer-input responsable-field" value="{{ usuario }}">
+        </td>
+        <td colspan="2" class="footer-cell footer-date">
+            <span class="footer-label">FECHA:</span>
+            <input type="text" name="fecha_brillo" class="footer-input date-field" value="{{ fecha_checklist|default('') }}" readonly>
+        </td>
+    </tr>
+    <tr class="footer-row">
+        <td colspan="5" class="footer-cell">
+            <span class="footer-label">OBSERVACIONES:</span>
+            <textarea name="observaciones_brillo" rows="2" class="footer-textarea"></textarea>
+        </td>
+    </tr>
+
+    <tr class="spacer-row"><td colspan="5"></td></tr>
+</tbody>

@@ -7,6 +7,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 const String kAppTitle = 'TrazOp';
 
 void main() {
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   runApp(const TrazOpMobile());
 }
 
@@ -37,7 +38,8 @@ class TrazOpWebView extends StatefulWidget {
 class _TrazOpWebViewState extends State<TrazOpWebView> {
   static const String _defaultUrl = String.fromEnvironment(
     'HELP_APP_URL',
-    defaultValue: 'http://192.168.0.18:5000/',
+    defaultValue:
+        'https://trazop-pruebas-2026-e6guf3hacfb9c8ak.mexicocentral-01.azurewebsites.net/',
   );
 
   late final WebViewController _controller;
@@ -47,6 +49,7 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
   );
   int _progress = 0;
   bool _hasError = false;
+  bool _showToolbar = false;
   String _errorMessage = '';
   String _currentUrl = _defaultUrl;
   Timer? _loadTimeout;
@@ -74,6 +77,7 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
               _progress = 100;
               _currentUrl = url;
             });
+            _syncToolbarVisibility(url);
           },
           onWebResourceError: (error) {
             if (error.isForMainFrame == false) return;
@@ -159,7 +163,8 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
             keyboardType: TextInputType.url,
             decoration: const InputDecoration(
               labelText: 'URL',
-              hintText: 'http://192.168.0.18:5000/',
+              hintText:
+                  'https://trazop-pruebas-2026-e6guf3hacfb9c8ak.mexicocentral-01.azurewebsites.net/',
             ),
           ),
           actions: [
@@ -189,6 +194,26 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
     await _loadUrl(normalized);
   }
 
+  Future<void> _syncToolbarVisibility(String url) async {
+    var isLogin = Uri.tryParse(url)?.path == '/login';
+    try {
+      final result = await _controller.runJavaScriptReturningResult(
+        "Boolean(document.querySelector('.login-container, .login-form'))",
+      );
+      final value = result.toString().toLowerCase();
+      isLogin = isLogin || value == 'true';
+    } catch (_) {
+      // Si no se puede inspeccionar el DOM, conservamos la deteccion por URL.
+    }
+    if (!mounted) return;
+    await SystemChrome.setEnabledSystemUIMode(
+      isLogin ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge,
+    );
+    setState(() {
+      _showToolbar = !isLogin;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -197,44 +222,49 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
         if (!didPop) _closeApp();
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text(kAppTitle),
-          backgroundColor: const Color(0xFF0F6A4F),
-          foregroundColor: Colors.white,
-          actions: [
-            IconButton(
-              tooltip: 'Atras',
-              onPressed: _goBack,
-              icon: const Icon(Icons.arrow_back),
-            ),
-            IconButton(
-              tooltip: 'Recargar',
-              onPressed: _reload,
-              icon: const Icon(Icons.refresh),
-            ),
-            IconButton(
-              tooltip: 'Servidor',
-              onPressed: _openUrlDialog,
-              icon: const Icon(Icons.settings),
-            ),
-          ],
-        ),
-        body: Stack(
-          children: [
-            WebViewWidget(controller: _controller),
-            if (_progress < 100)
-              LinearProgressIndicator(
-                value: _progress <= 0 ? null : _progress / 100,
-                minHeight: 3,
-              ),
-            if (_hasError)
-              _ConnectionError(
-                url: _currentUrl,
-                message: _errorMessage,
-                onRetry: _reload,
-                onConfig: _openUrlDialog,
-              ),
-          ],
+        appBar: _showToolbar
+            ? AppBar(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF66686A),
+                surfaceTintColor: Colors.white,
+                actions: [
+                  IconButton(
+                    tooltip: 'Atras',
+                    onPressed: _goBack,
+                    icon: const Icon(Icons.arrow_back),
+                  ),
+                  IconButton(
+                    tooltip: 'Recargar',
+                    onPressed: _reload,
+                    icon: const Icon(Icons.refresh),
+                  ),
+                  IconButton(
+                    tooltip: 'Servidor',
+                    onPressed: _openUrlDialog,
+                    icon: const Icon(Icons.settings),
+                  ),
+                ],
+              )
+            : null,
+        body: SafeArea(
+          top: false,
+          child: Stack(
+            children: [
+              WebViewWidget(controller: _controller),
+              if (_progress < 100)
+                LinearProgressIndicator(
+                  value: _progress <= 0 ? null : _progress / 100,
+                  minHeight: 3,
+                ),
+              if (_hasError)
+                _ConnectionError(
+                  url: _currentUrl,
+                  message: _errorMessage,
+                  onRetry: _reload,
+                  onConfig: _openUrlDialog,
+                ),
+            ],
+          ),
         ),
       ),
     );

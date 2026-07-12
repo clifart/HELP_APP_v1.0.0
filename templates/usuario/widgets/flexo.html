@@ -1,0 +1,153 @@
+{# Widget: checklist de flexo.
+
+   Como editar:
+   - Edita solamente las filas <tr> ubicadas entre "INICIO ZONA EDITABLE" y "FIN ZONA EDITABLE".
+   - El name debe ser unico en todo el checklist.
+   - No cambies data-module="flexo" ni el bloque de responsable/fecha/observaciones.
+   - No hace falta tocar Python para guardar nuevas lineas: se guardan en checklist_modulos.data_json.
+   - Conserva los ids flexo-* porque alimentan los calculos automaticos.#}
+<tbody class="module" data-module="flexo">
+                    <tr class="section-row">
+                        <td class="col-num">II</td>
+                        <td class="col-desc section-title">IMPRESION FLEXO</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+    {# INICIO ZONA EDITABLE: agrega, elimina o renumera puntos del checklist aqui. #}
+
+                    <tr>
+                        <td class="col-num">1</td>
+                        <td class="col-desc">Se entrega paquete (Punto I)</td>
+                        <td class="col-opt"><input type="radio" name="flexo_entrega_paquete" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="flexo_entrega_paquete" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="flexo_entrega_paquete" value="NA"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">2</td>
+                        <td class="col-desc">Verificar Nitrilos vs Sherpa. APROBADA</td>
+                        <td class="col-opt"><input type="radio" name="flexo_verificar_nitrilos" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="flexo_verificar_nitrilos" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="flexo_verificar_nitrilos" value="NA"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">2.1</td>
+                        <td class="col-desc">Alistamiento rollos de sustratos</td>
+                        <td class="col-opt"><input type="radio" name="flexo_alistamiento_rollos" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="flexo_alistamiento_rollos" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="flexo_alistamiento_rollos" value="NA"></td>
+                    </tr>
+
+                    <tr class="section-row">
+                        <td class="col-num">3</td>
+                        <td class="col-desc section-title">CONTROL EN PROCESO CADA x METROS</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">3.1</td>
+                        <td class="col-desc">Tonos estan dentro de la carta de colores</td>
+                        <td class="col-opt"><input type="radio" name="flexo_tonos_carta" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="flexo_tonos_carta" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="flexo_tonos_carta" value="NA"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">3.2</td>
+                        <td class="col-desc">Tonos dentro de la ultima muestra aprobada</td>
+                        <td class="col-opt"><input type="radio" name="flexo_tonos_muestra" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="flexo_tonos_muestra" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="flexo_tonos_muestra" value="NA"></td>
+                    </tr>
+
+                    <tr class="section-row">
+                        <td class="col-num">4</td>
+                        <td class="col-desc section-title">DATOS DE ROLLOS</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">4.1</td>
+                        <td class="col-desc">Contenido rollo (mts)</td>
+                        <td class="col-opt" colspan="3">
+                            <input id="flexo-mts" type="number" step="0.01" min="0" name="flexo_contenido_rollo_mts" class="mini-input wide-input">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="col-num">4.2</td>
+                        <td class="col-desc">Cantidad de etiquetas por metro</td>
+                        <td class="col-opt" colspan="3">
+                            <input id="flexo-etq" type="number" step="0.01" min="0" name="flexo_etiquetas_por_metro" class="mini-input wide-input">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="col-num">4.3</td>
+                        <td class="col-desc">Peso de esa cantidad de etiquetas por metro</td>
+                        <td class="col-opt" colspan="3">
+                            <input id="flexo-peso-etq" type="number" step="0.001" min="0" name="flexo_peso_etiquetas_metro" class="mini-input wide-input">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="col-num">4.4</td>
+                        <td class="col-desc">Peso de tara</td>
+                        <td class="col-opt" colspan="3">
+                            <input id="flexo-tara" type="number" step="0.001" min="0" name="flexo_peso_tara" class="mini-input wide-input">
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">4.5</td>
+                        <td class="col-desc">Peso de cada rollo terminado</td>
+                        <td class="col-opt" colspan="3">
+                            <span id="flexo-out-peso" class="calc-output">0</span>
+                            <input type="hidden" name="flexo_peso_rollo_terminado" id="flexo-h-peso" value="0">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="col-num">4.6</td>
+                        <td class="col-desc">Cantidad de etiquetas por rollo terminado</td>
+                        <td class="col-opt" colspan="3">
+                            <span id="flexo-out-etq" class="calc-output">0</span>
+                            <input type="hidden" name="flexo_etiquetas_por_rollo" id="flexo-h-etq" value="0">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="col-num">4.7</td>
+                        <td class="col-desc">Cantidad de rollos generados</td>
+                        <td class="col-opt" colspan="3">
+                            <span id="flexo-out-rollos" class="calc-output">0</span>
+                            <input type="hidden" name="flexo_rollos_generados" id="flexo-h-rollos" value="0">
+                        </td>
+                    </tr>
+
+    {# FIN ZONA EDITABLE. Mantener el bloque siguiente para que guarde responsable, fecha y observaciones. #}
+
+                    <tr class="footer-row">
+                        <td colspan="3" class="footer-cell">
+                            <span class="footer-label">RESPONSABLE:</span>
+                            <input
+                              type="text"
+                              name="responsable_flexo"
+                              class="footer-input responsable-field"
+                              value="{{ usuario }}"
+                            >
+                        </td>
+                        <td colspan="2" class="footer-cell footer-date">
+                            <span class="footer-label">FECHA:</span>
+                            <input type="text" name="fecha_flexo" class="footer-input date-field" value="{{ fecha_checklist|default('') }}" readonly>
+                        </td>
+                    </tr>
+                    <tr class="footer-row">
+                        <td colspan="5" class="footer-cell">
+                            <span class="footer-label">OBSERVACIONES:</span>
+                            <textarea name="observaciones_flexo" rows="2" class="footer-textarea"></textarea>
+                        </td>
+                    </tr>
+                </tbody>

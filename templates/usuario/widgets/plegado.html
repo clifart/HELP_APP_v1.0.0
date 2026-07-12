@@ -1,0 +1,69 @@
+{# Widget: checklist de plegado.
+
+   PARA AGREGAR O QUITAR LINEAS DEL CHECKLIST:
+   - Edita solamente las filas <tr> ubicadas entre "INICIO ZONA EDITABLE" y "FIN ZONA EDITABLE".
+   - Cada nueva linea debe tener 3 radios con el mismo atributo name.
+   - El name debe ser unico en todo el checklist, por ejemplo: pleg_verificar_muestra.
+   - Deja required solo en el primer radio de cada linea.
+   - No cambies data-module="plegado" ni el bloque de responsable/fecha/observaciones.
+   - No hace falta tocar Python para guardar nuevas lineas: se guardan en checklist_modulos.data_json.
+#}
+<tbody class="module" data-module="plegado">
+    <tr class="section-row">
+        <td class="col-num">V</td>
+        <td class="col-desc section-title">PLEGADO</td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+    </tr>
+
+    {# INICIO ZONA EDITABLE: agrega, elimina o renumera puntos del checklist aqui. #}
+    <tr>
+        <td class="col-num">1</td>
+        <td class="col-desc">Se entrega paquete (Punto I)</td>
+        <td class="col-opt"><input type="radio" name="pleg_entrega_paquete" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="pleg_entrega_paquete" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="pleg_entrega_paquete" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">2</td>
+        <td class="col-desc">Verificar en ficha técnica pliegue de insertos Demac impresos (alimentar ficha técnica)</td>
+        <td class="col-opt"><input type="radio" name="pleg_ficha_tecnica" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="pleg_ficha_tecnica" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="pleg_ficha_tecnica" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">3</td>
+        <td class="col-desc">Verificar Muestra (inserto plegado)</td>
+        <td class="col-opt"><input type="radio" name="pleg_verificar_muestra" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="pleg_verificar_muestra" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="pleg_verificar_muestra" value="NA"></td>
+    </tr>    
+    <tr>
+        <td class="col-num">4</td>
+        <td class="col-desc">Se entrega muestra actualizada de inserto plegado</td>
+        <td class="col-opt"><input type="radio" name="pleg_muestra_actualizada" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="pleg_muestra_actualizada" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="pleg_muestra_actualizada" value="NA"></td>
+    </tr>
+    {# FIN ZONA EDITABLE. Mantener el bloque siguiente para que guarde responsable, fecha y observaciones. #}
+
+    <tr class="footer-row">
+        <td colspan="3" class="footer-cell">
+            <span class="footer-label">RESPONSABLE:</span>
+            <input type="text" name="responsable_pleg" class="footer-input responsable-field" value="{{ usuario }}">
+        </td>
+        <td colspan="2" class="footer-cell footer-date">
+            <span class="footer-label">FECHA:</span>
+            <input type="text" name="fecha_pleg" class="footer-input date-field" value="{{ fecha_checklist|default('') }}" readonly>
+        </td>
+    </tr>
+    <tr class="footer-row">
+        <td colspan="5" class="footer-cell">
+            <span class="footer-label">OBSERVACIONES:</span>
+            <textarea name="observaciones_pleg" rows="2" class="footer-textarea"></textarea>
+        </td>
+    </tr>
+
+    <tr class="spacer-row"><td colspan="5"></td></tr>
+</tbody>

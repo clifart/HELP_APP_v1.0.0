@@ -2,10 +2,17 @@
 {% block content %}
 <div class="container">
 
-    <!-- Botón historial usuario -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='botones/boton_historial_usuario.css') }}">
-    <div class="boton-historial-fijo">
-        {% include 'componentes/boton_historial_usuario.html' %}
+    <!-- Menú sándwich -->
+    <div class="menu-sandwich-wrapper">
+      <button class="menu-sandwich-btn" id="btnMenuSandwich" aria-label="Menú" aria-expanded="false">
+        <span class="sandwich-bar"></span>
+        <span class="sandwich-bar"></span>
+        <span class="sandwich-bar"></span>
+      </button>
+      <nav class="menu-sandwich-nav" id="menuSandwichNav" aria-hidden="true">
+        <a href="{{ url_for('usuario.historial_usuario') }}" class="menu-sandwich-item">🕒 Historial</a>
+        <a href="{{ url_for('usuario.calculadora_corte') }}" class="menu-sandwich-item">✂️ Calc. de Corte</a>
+      </nav>
     </div>
 
     <!-- ENCABEZADO -->
@@ -33,8 +40,8 @@
         </select>
 
         <div class="desc-combobox" id="desc-combobox">
-            <input type="text" name="descripcion" id="desc-select" class="form-select"
-                placeholder="Seleccione descripción..." autocomplete="off" required
+            <input type="text" name="descripcion" id="desc-select" class="form-select desc-inactivo"
+                placeholder="Seleccione descripción..." autocomplete="off" required readonly aria-disabled="true" tabindex="-1"
                 aria-autocomplete="list" aria-expanded="false" aria-controls="desc-options">
             <div class="desc-options" id="desc-options" role="listbox">
             {% for r in ops %}
@@ -50,27 +57,27 @@
             </div>
         </div>
 
-        <select id="tareaSelect" name="tarea" class="form-select" required>
+        <select id="tareaSelect" name="tarea" class="form-select" required {% if not op_preseleccionada %}disabled{% endif %}>
             <option value="" disabled selected>Selecciona tarea...</option>
-            <option value="CORTE">CORTE</option>
-            <option value="ALISTAMIENTO">ALISTAMIENTO</option>
+            <option value="Corte y/o individualización">Corte y/o individualización</option>
+            <option value="Alistamiento PRE IMPRESION">Alistamiento PRE IMPRESION</option>
             <option value="Impresión SORMZ">Impresión SORMZ</option>
             <option value="Impresión GTO46">Impresión GTO46</option>
             <option value="Impresión FLEXO">Impresión FLEXO</option>
             <option value="Impresión DIGITAL">Impresión DIGITAL</option>
-            <option value="BARNIZ">BARNIZ</option>
-            <option value="PLEGADO">PLEGADO</option>
-            <option value="PLASTIFICADO">PLASTIFICADO</option>
-            <option value="Auxiliar PLASTIFICADO">Auxiliar PLASTIFICADO</option>
-            <option value="TROQUELADO">TROQUELADO</option>
-            <option value="DESCARTONE">DESCARTONE</option>
-            <option value="PEGUE">PEGUE</option>
-            <option value="Auxiliar PEGUE">Auxiliar PEGUE</option>
-            <option value="ENCUADERNACION">ENCUADERNACIÓN</option>
-            <option value="REVISIÓN">REVISION</option>
-            <option value="REPROCESO">REPROCESO</option>
-            <option value="MANTENIMIENTO">MANTENIMIENTO</option>
-            <option value="VARIOS">VARIOS</option>
+            <option value="Barniz">Barniz</option>
+            <option value="Plegado">Plegado</option>
+            <option value="Plastificado">Plastificado</option>
+            <option value="Auxiliar Plastificado">Auxiliar Plastificado</option>
+            <option value="Troquelado">Troquelado</option>
+            <option value="Descartone">Descartone</option>
+            <option value="Pegue">Pegue</option>
+            <option value="Auxiliar Pegue">Auxiliar Pegue</option>
+            <option value="Encuadernación">Encuadernación</option>
+            <option value="Revisión">Revisión</option>
+            <option value="Reproceso">Reproceso</option>
+            <option value="Mantenimiento preventivo">Mantenimiento preventivo</option>
+            <option value="Varios">Varios</option>
         </select>
 
         <input type="hidden" name="force_continue" id="force_continue" value="0">
@@ -132,7 +139,18 @@
                     <td>{{ t.get('descripcion') }}</td>
                     <td>{{ t.get('tarea') }}</td>
                     <td>{{ ini_hhmm if ini_s else '-' }}</td>
-                    <td>{{ fin_hhmm if fin_s else '-' }}</td>
+                    <td>
+                        {% if fin_s %}
+                            {{ fin_hhmm }}
+                        {% elif t.get('fin_aut_hhmm') %}
+                            <span class="fin-aut-display">
+                                <span>FIN AUT</span>
+                                <strong>{{ t.get('fin_aut_hhmm') }}</strong>
+                            </span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                     <td>
                         {% if t.get('omite_cantidad') %}
                         <span class="sin-cantidad">N/A</span>
@@ -140,10 +158,16 @@
                         <input type="number" min="0" class="cantidad-input" value="{{ t.get('cantidad') or 0 }}" disabled>
                         {% endif %}
                     </td>
-                    <td>
+                    <td class="acciones-tarea-celda">
+                        <div class="acciones-tarea">
                         <button type="button" class="btn btn-danger btn-sm btn-finalizar" data-id="{{ t.get('id') }}" disabled>
                             Finalizar
                         </button>
+                        {% if t.get('omite_controles') %}
+                        <button type="button" class="btn btn-danger btn-sm btn-sin-checklist" disabled aria-disabled="true">
+                            Sin checklist
+                        </button>
+                        {% else %}
                         <a href="{{ url_for('usuario.checklist_impresion') }}"
                             class="btn btn-primary btn-sm btn-checklist{% if t.get('checklist_ok') or t.get('omite_controles') %} disabled{% endif %}"
                             data-locked="{{ 1 if t.get('checklist_ok') or t.get('omite_controles') else 0 }}"
@@ -151,6 +175,7 @@
                             {% if t.get('checklist_ok') or t.get('omite_controles') %}tabindex="-1"{% endif %}>
                             Checklist
                         </a>
+                        {% endif %}
                         <button type="button" class="btn btn-secondary btn-sm btn-pausa" data-id="{{ t.get('id') }}">
                             Pausa
                         </button>
@@ -158,6 +183,7 @@
                             style="display:none;">
                             Reanudar
                         </button>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -184,7 +210,7 @@
                 <div id="confirmacionMensaje" class="confirmacion-mensaje"></div>
                 <div class="confirmacion-actions">
                     <button type="button" class="btn-confirmar-cancelar" id="btnConfirmacionCancelar">Cancelar</button>
-                    <button type="button" class="btn-confirmar-aceptar" id="btnConfirmacionAceptar">Aceptar</button>
+                    <button type="button" class="btn-confirmar-aceptar" id="btnConfirmacionAceptar">Iniciar proceso</button>
                 </div>
             </div>
         </div>
@@ -219,6 +245,63 @@
 </div>
 
 <style>
+    /* ===== MENÚ SÁNDWICH ===== */
+    .menu-sandwich-wrapper {
+        position: absolute;
+        top: 22px;
+        right: 20px;
+        z-index: 200;
+    }
+    .menu-sandwich-btn {
+        background: #2e7d32;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 12px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.22);
+        transition: background 0.15s;
+    }
+    .menu-sandwich-btn:hover { background: #1b5e20; }
+    .sandwich-bar {
+        display: block;
+        width: 22px;
+        height: 2.5px;
+        background: #fff;
+        border-radius: 2px;
+        transition: transform 0.22s, opacity 0.18s;
+    }
+    .menu-sandwich-btn.abierto .sandwich-bar:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+    .menu-sandwich-btn.abierto .sandwich-bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    .menu-sandwich-btn.abierto .sandwich-bar:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+    .menu-sandwich-nav {
+        display: none;
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 6px 22px rgba(0,0,0,0.16);
+        min-width: 190px;
+        overflow: hidden;
+        border: 1px solid rgba(0,0,0,0.07);
+    }
+    .menu-sandwich-nav.abierto { display: block; }
+    .menu-sandwich-item {
+        display: block;
+        padding: 13px 18px;
+        color: #222;
+        text-decoration: none;
+        font-size: 15px;
+        font-weight: 500;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.13s;
+    }
+    .menu-sandwich-item:last-child { border-bottom: none; }
+    .menu-sandwich-item:hover { background: #e9f5ee; color: #056c4e; }
+
     .alerta-oculta {
         position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
         background-color: #ffc107; color: #222; padding: 10px 20px;
@@ -263,6 +346,19 @@
     .aviso-extender-auditoria { margin-top: 8px; }
     .aviso-extender-actions { margin-top: 12px; }
     .btn-finalizar { background-color: #dc3545; color: white; border: none; border-radius: 6px; padding: 5px 10px; }
+    .btn-finalizar, .btn-sin-checklist { width: 72px; height: 31px; box-sizing: border-box; }
+    .btn-sin-checklist { padding: 0 3px; font-size: 10px; white-space: nowrap; }
+    .acciones-tarea-celda { vertical-align: middle; }
+    .acciones-tarea {
+        display: flex; align-items: center; justify-content: center;
+        gap: 8px; min-height: 31px; white-space: nowrap;
+    }
+    .acciones-tarea > .btn,
+    .acciones-tarea > .btn-checklist {
+        display: inline-flex; align-items: center; justify-content: center;
+        height: 31px; margin: 0 !important; line-height: 1;
+        vertical-align: middle; white-space: nowrap;
+    }
     .btn-agregar { background-color: #0f6a4f; color: white; border: none; border-radius: 6px; padding: 6px 12px; margin-left: 8px; }
     .btn-cerrar { margin-top: 20px; background-color: #6c757d; color: white; border: none; border-radius: 6px; padding: 6px 12px; display: inline-block; text-decoration: none; }
     .btn-checklist { background-color: #0d6efd; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; margin-left: 6px; text-decoration: none; display: inline-block; }
@@ -270,11 +366,29 @@
     .btn-pausa { background: #6c757d; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; margin-left: 6px; cursor: pointer; }
     .btn-reanudar { background: #198754; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; margin-left: 6px; cursor: pointer; }
     .sin-cantidad { color: #6c757d; font-weight: 700; font-size: 12px; }
+    .fin-aut-display { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.05; color: #0f6a4f; font-size: 11px; font-weight: 700; }
+    .fin-aut-display strong { color: #222; font-size: 12px; font-weight: 800; }
     #form-tarea { align-items: center; gap: 22px; justify-content: center; }
     #op-select { width: 190px; }
     #tareaSelect { width: 210px; }
+    #op-select.select-placeholder,
+    #tareaSelect.select-placeholder {
+        color: #6c757d;
+    }
+    #form-tarea .form-select:disabled {
+        background-color: #e9ecef;
+        color: #6c757d;
+        cursor: not-allowed;
+        opacity: 1;
+    }
     .desc-combobox { position: relative; display: inline-block; width: min(460px, 42vw); }
     .desc-combobox .form-select { width: 100%; min-width: 180px; }
+    #desc-select.desc-inactivo {
+        background-color: #e9ecef;
+        color: #6c757d;
+        cursor: not-allowed;
+        opacity: 1;
+    }
     .desc-options {
         display: none; position: absolute; top: calc(100% + 2px); left: 0; right: 0;
         max-height: 220px; overflow-y: auto; background: #fff; border: 1px solid #ced4da;
@@ -299,7 +413,8 @@
         #form-tarea { display: flex; flex-direction: column; gap: 8px; }
         #op-select, #tareaSelect, #form-tarea .form-select, #form-tarea .desc-combobox, #form-tarea .btn-agregar { width: 100%; margin-left: 0; }
         #tablaTareas th, #tablaTareas td { padding: 4px; font-size: 0.75rem; white-space: nowrap; }
-        .btn-finalizar, .btn-checklist, .btn-pausa, .btn-reanudar { display: block; width: 100%; margin: 2px 0; text-align: center; }
+        .acciones-tarea { flex-direction: column; align-items: stretch; gap: 4px; }
+        .btn-finalizar, .btn-sin-checklist, .btn-checklist, .btn-pausa, .btn-reanudar { display: block; width: 100%; margin: 2px 0; text-align: center; }
         .btn-cerrar { width: 100%; text-align: center; }
     }
 </style>
@@ -373,7 +488,7 @@
     const colaAvisos  = [];
 
     const HORARIOS = {
-        diurno:   { 0:[[360,1320]],1:[[360,1320]],2:[[360,1320]],3:[[360,1320]],4:[[360,1320]],5:[[360,720]],6:[] },
+        diurno:   { 0:[[360,840],[840,1320]],1:[[360,840],[840,1320]],2:[[360,840],[840,1320]],3:[[360,840],[840,1320]],4:[[360,840],[840,1320]],5:[[360,720]],6:[] },
         nocturno: { 0:[[1230,1440]],1:[[0,360],[1230,1440]],2:[[0,360],[1230,1440]],3:[[0,360],[1230,1440]],4:[[0,360],[1290,1440]],5:[[0,360]],6:[] }
     };
 
@@ -581,13 +696,16 @@
 
     // ===== OP ⇄ DESCRIPCIÓN =====
     (function () {
-        const opSelect   = document.getElementById("op-select");
-        const descInput  = document.getElementById("desc-select");
+        const opSelect    = document.getElementById("op-select");
+        const descInput   = document.getElementById("desc-select");
         const descOptions = document.getElementById("desc-options");
+        const tareaSelect = document.getElementById("tareaSelect");
         if (!opSelect || !descInput || !descOptions) return;
+
         let syncing = false;
         const PRE = "{{ (op_preseleccionada or '')|e }}".trim();
         const descItems = Array.from(descOptions.querySelectorAll(".desc-option"));
+
         function normalizar(v) { return (v || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
         function opToDesc(v) { const o = opSelect.querySelector(`option[value="${CSS.escape(v)}"]`); return o && o.dataset.desc ? o.dataset.desc : ""; }
         function descCoincide(item, term) {
@@ -622,43 +740,45 @@
             descItems.forEach(o => { o.hidden = term && !descCoincide(o, term); });
             toggleDescOptions(true);
         }
+        function actualizarPlaceholderOP() {
+            opSelect.classList.toggle("select-placeholder", !(opSelect.value || "").trim());
+        }
+        function actualizarEstadoTarea() {
+            if (!tareaSelect) return;
+            const hayOP = !!(opSelect.value || "").trim();
+            tareaSelect.disabled = !hayOP;
+            if (!hayOP) tareaSelect.value = "";
+            tareaSelect.classList.toggle("select-placeholder", !(tareaSelect.value || "").trim());
+        }
         function syncFromOP() {
-            if (syncing) return; syncing = true;
-            const op = opSelect.value || ""; const desc = op ? (opToDesc(op)||"") : "";
+            if (syncing) return;
+            syncing = true;
+            const op = opSelect.value || "";
+            const desc = op ? (opToDesc(op) || "") : "";
             descInput.value = desc || "";
             filtrarDescOptions();
             toggleDescOptions(false);
             syncing = false;
+            actualizarPlaceholderOP();
+            actualizarEstadoTarea();
         }
         function syncFromDESC() {
-            if (syncing) return; syncing = true;
-            const desc = descInput.value || ""; const op = desc ? (descToOp(desc, true)||"") : "";
-            if (op && Array.from(opSelect.options).some(o => o.value===op)) opSelect.value = op;
-            if (!desc) opSelect.value = "";
-            if (desc && !op) opSelect.value = "";
-            syncing = false;
+            actualizarPlaceholderOP();
+            actualizarEstadoTarea();
         }
-        window.sincronizarOPDesdeDescripcion = syncFromDESC;
-        document.addEventListener("DOMContentLoaded", function () { if (PRE) opSelect.value = PRE; if (opSelect.value) syncFromOP(); });
-        opSelect.addEventListener("change", syncFromOP);
-        function seleccionarDescripcion() {
-            setTimeout(() => descInput.select(), 0);
-        }
-        descInput.addEventListener("focus", function () { seleccionarDescripcion(); filtrarDescOptions(); });
-        descInput.addEventListener("click", seleccionarDescripcion);
-        descInput.addEventListener("input", function () { filtrarDescOptions(); syncFromDESC(); });
-        descInput.addEventListener("change", syncFromDESC);
-        descItems.forEach(o => o.addEventListener("mousedown", function (ev) {
-            ev.preventDefault();
-            descInput.value = this.dataset.value || "";
-            syncFromDESC();
-            toggleDescOptions(false);
-        }));
-        document.addEventListener("click", function (ev) {
-            if (!descOptions.contains(ev.target) && ev.target !== descInput) toggleDescOptions(false);
-        });
-    })();
 
+        window.sincronizarOPDesdeDescripcion = syncFromDESC;
+        document.addEventListener("DOMContentLoaded", function () {
+            if (PRE) opSelect.value = PRE;
+            if (opSelect.value) syncFromOP();
+            else actualizarEstadoTarea();
+            actualizarPlaceholderOP();
+        });
+        opSelect.addEventListener("change", syncFromOP);
+
+        descInput.addEventListener("focus", function () { toggleDescOptions(false); });
+        descInput.addEventListener("click", function () { toggleDescOptions(false); });
+    })();
     // ===== CONFIRMAR INICIO =====
     (function () {
         const form  = document.getElementById("form-tarea");
@@ -673,7 +793,7 @@
             const proceso = (tarSel && tarSel.value || "").trim();
             if (!op_no) {
                 ev.preventDefault();
-                mostrarAlerta("Selecciona una OP o elige una descripción del listado para asociarla.");
+                mostrarAlerta("Selecciona una OP para iniciar el proceso.");
                 return;
             }
             if (!proceso) return;
@@ -803,9 +923,9 @@
         const btnReanudar = fila.querySelector('.btn-reanudar');
         if (estado === "Pausada") {
             if (btnPausa)    btnPausa.style.display    = "none";
-            if (btnReanudar) btnReanudar.style.display = "inline-block";
+            if (btnReanudar) btnReanudar.style.display = "inline-flex";
         } else {
-            if (btnPausa)    btnPausa.style.display    = "inline-block";
+            if (btnPausa)    btnPausa.style.display    = "inline-flex";
             if (btnReanudar) btnReanudar.style.display = "none";
         }
     }
@@ -838,7 +958,7 @@
             const resp = await fetch("{{ url_for('usuario.finalizar_tarea_usuario') }}", {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id, op_no: op, descripcion, tarea, cantidad: cantidadEnviar,
-                    inicio: inicioRaw || inicioCelda.textContent, fin: finRaw || finCelda.textContent })
+                    inicio: inicioRaw || inicioCelda.textContent, fin: finRaw || "" })
             });
             const data = await resp.json();
             if (!resp.ok || !data.ok) { mostrarAlerta(data.msg || "⚠️ Error al guardar."); return; }
@@ -896,6 +1016,26 @@
             mostrarAlerta("▶️ Tarea reanudada.");
         } catch (e) { mostrarAlerta(e.message || "⚠️ Error al reanudar."); }
     }
+
+    // ===== MENÚ SÁNDWICH =====
+    (function () {
+        const btn = document.getElementById('btnMenuSandwich');
+        const nav = document.getElementById('menuSandwichNav');
+        if (!btn || !nav) return;
+        btn.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            const abierto = nav.classList.toggle('abierto');
+            btn.classList.toggle('abierto', abierto);
+            btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+            nav.setAttribute('aria-hidden', abierto ? 'false' : 'true');
+        });
+        document.addEventListener('click', function () {
+            nav.classList.remove('abierto');
+            btn.classList.remove('abierto');
+            btn.setAttribute('aria-expanded', 'false');
+            nav.setAttribute('aria-hidden', 'true');
+        });
+    })();
 </script>
 
 {% endblock %}

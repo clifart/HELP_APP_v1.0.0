@@ -1,0 +1,70 @@
+{# Widget: checklist de corte de papel.
+
+   PARA AGREGAR O QUITAR LINEAS DEL CHECKLIST:
+   - Edita solamente las filas <tr> ubicadas entre "INICIO ZONA EDITABLE" y "FIN ZONA EDITABLE".
+   - Cada nueva linea debe tener 3 radios con el mismo atributo name.
+   - El name debe ser unico en todo el checklist, por ejemplo: corte_verificar_escuadra.
+   - Deja required solo en el primer radio de cada linea.
+   - No cambies data-module="corte", los nombres op_no/proceso/modulo ni el bloque de responsable/fecha/observaciones.
+   - No hace falta tocar Python para guardar nuevas lineas: se guardan en checklist_modulos.data_json.
+#}
+<tbody class="module" data-module="corte">
+    <tr class="section-row">
+        <td class="col-num">II</td>
+        <td class="col-desc section-title">REFILE E INDIVIDUALIZACION</td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+    </tr>
+
+    {# INICIO ZONA EDITABLE: agrega, elimina o renumera puntos del checklist aqui. #}
+    <tr>
+        <td class="col-num">1</td>
+        <td class="col-desc">Se entrega paquete (Punto I)</td>
+        <td class="col-opt"><input type="radio" name="p1_entrega_paquete" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="p1_entrega_paquete" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="p1_entrega_paquete" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">2</td>
+        <td class="col-desc">Verificar con la OP: tamano del pliego: 100x70cm. 90x60cm.</td>
+        <td class="col-opt"><input type="radio" name="p2_verificar_planchas" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="p2_verificar_planchas" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="p2_verificar_planchas" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">3</td>
+        <td class="col-desc">Alistamiento del papel para cortar</td>
+        <td class="col-opt"><input type="radio" name="p3_alistamiento_corte_papel" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="p3_alistamiento_corte_papel" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="p3_alistamiento_corte_papel" value="NA"></td>
+    </tr>
+    <tr>
+        <td class="col-num">4</td>
+        <td class="col-desc">Individualización</td>
+        <td class="col-opt"><input type="radio" name="p4_individualización" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="p4_individualización" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="p4_individualización" value="NA"></td>
+    </tr>
+
+    {# FIN ZONA EDITABLE. Mantener el bloque siguiente para que guarde responsable, fecha y observaciones. #}
+
+    <tr class="footer-row">
+        <td colspan="3" class="footer-cell">
+            <span class="footer-label">RESPONSABLE:</span>
+            <input type="text" name="responsable_imp" class="footer-input responsable-field" value="{{ usuario }}">
+        </td>
+        <td colspan="2" class="footer-cell footer-date">
+            <span class="footer-label">FECHA:</span>
+            <input type="text" name="fecha_imp" class="footer-input date-field" value="{{ fecha_checklist|default('') }}" readonly>
+        </td>
+    </tr>
+    <tr class="footer-row">
+        <td colspan="5" class="footer-cell">
+            <span class="footer-label">OBSERVACIONES:</span>
+            <textarea name="observaciones_imp" rows="2" class="footer-textarea"></textarea>
+        </td>
+    </tr>
+
+    <tr class="spacer-row"><td colspan="5"></td></tr>
+</tbody>

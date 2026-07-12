@@ -1,0 +1,64 @@
+{# Widget: checklist de paquete.
+
+   Como editar:
+   - Edita solamente las filas <tr> ubicadas entre "INICIO ZONA EDITABLE" y "FIN ZONA EDITABLE".
+   - El name debe ser unico en todo el checklist.
+   - No cambies data-module="paquete" ni el bloque de responsable/fecha/observaciones.
+   - No hace falta tocar Python para guardar nuevas lineas: se guardan en checklist_modulos.data_json.
+#}
+<tbody class="module" data-module="paquete">
+                    <tr class="section-row">
+                        <td class="col-num">I</td>
+                        <td class="col-desc section-title">PAQUETE</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+    {# INICIO ZONA EDITABLE: agrega, elimina o renumera puntos del checklist aqui. #}
+
+                    {% set paq_items = [
+                    ("1", "Aprobación de la Dirección de Calidad", "paq_aprob_dir_cal"),
+                    ("1.1", "Sherpa (muestra de inserto plegado)", "paq_sherpa_inserto"),
+                    ("1.2", "Carta de Colores", "paq_carta_colores"),
+                    ("1.3", "Última muestra de impresión aprobada", "paq_ultima_muestra_imp"),
+                    ("2", "Producto Nuevo o con cambios", "paq_prod_nuevo_cambios"),
+                    ("2.1", "Sherpa", "paq_sherpa"),
+                    ("2.2", "Dummy", "paq_dummy"),
+                    ("3", "Generar Orden de Producción (OP)", "paq_generar_op"),
+                    ("4", "Entregar copia de la OP a Bodega para descargue del papel en el inventario",
+                    "paq_entregar_copia_bodega"),
+                    ("4.1", "Verificar descargue del papel en el sistema", "paq_verificar_descargue")
+                    ] %}
+
+                    {% for n, desc, key in paq_items %}
+                    <tr>
+                        <td class="col-num">{{ n }}</td>
+                        <td class="col-desc">{{ desc }}</td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NA"></td>
+                    </tr>
+                    {% endfor %}
+
+    {# FIN ZONA EDITABLE. Mantener el bloque siguiente para que guarde responsable, fecha y observaciones. #}
+
+                    <tr class="footer-row">
+                        <td colspan="3" class="footer-cell">
+                            <span class="footer-label">RESPONSABLE:</span>
+                            <input type="text" name="responsable_paq" class="footer-input responsable-field" value="" readonly>
+                        </td>
+                        <td colspan="2" class="footer-cell footer-date">
+                            <span class="footer-label">FECHA:</span>
+                            <input type="text" name="fecha_paq" class="footer-input date-field" value="{{ fecha_checklist|default('') }}" readonly>
+                        </td>
+                    </tr>
+                    <tr class="footer-row">
+                        <td colspan="5" class="footer-cell">
+                            <span class="footer-label">OBSERVACIONES:</span>
+                            <textarea name="observaciones_paq" rows="2" class="footer-textarea"></textarea>
+                        </td>
+                    </tr>
+
+                    <tr class="spacer-row"><td colspan="5"></td></tr>
+                </tbody>

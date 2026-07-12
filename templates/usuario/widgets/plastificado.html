@@ -1,0 +1,89 @@
+{# Widget: checklist de plastificado.
+
+   PARA AGREGAR O QUITAR LINEAS DEL CHECKLIST:
+   - Edita solamente las filas <tr> ubicadas entre "INICIO ZONA EDITABLE" y "FIN ZONA EDITABLE".
+   - Para una linea SI/NO/N/A usa 3 radios con el mismo atributo name.
+   - El name debe ser unico en todo el checklist, por ejemplo: plas_calidad_dinas.
+   - Deja required solo en el primer radio de cada linea obligatoria.
+   - La fila "Tamaño de rollo y Peso" usa campos de texto y se debe conservar si necesitas alto/ancho.
+   - No cambies data-module="plastificado" ni el bloque de responsable/fecha/observaciones.
+   - No hace falta tocar Python para guardar nuevas lineas: se guardan en checklist_modulos.data_json.
+#}
+<tbody class="module" data-module="plastificado">
+    <tr class="section-row">
+        <td class="col-num">III</td>
+        <td class="col-desc section-title">PLASTIFICADO AL CALOR CON ACABADO CORONA</td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+        <td class="col-opt opt-head"></td>
+    </tr>
+
+    {# INICIO ZONA EDITABLE: agrega, elimina o renumera puntos del checklist aqui. #}
+    <tr>
+        <td class="col-num">1</td>
+        <td class="col-desc">Se entrega paquete (Punto I)</td>
+        <td class="col-opt"><input type="radio" name="plas_entrega_paquete" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="plas_entrega_paquete" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="plas_entrega_paquete" value="NA"></td>
+    </tr>
+
+    <tr>
+        <td class="col-num">2</td>
+        <td class="col-desc">Tamaño de rollo y Peso</td>
+        <td class="col-opt"><input type="text" name="plas_alto" placeholder="Alto" class="mini-input" required></td>
+        <td class="col-opt"><input type="text" name="plas_ancho" placeholder="Ancho" class="mini-input" required></td>
+        <td class="col-opt"><input type="radio" name="plas_peso" placeholder="Peso" value="NA"></td>
+    </tr>
+
+    <tr>
+        <td class="col-num">3</td>
+        <td class="col-desc">Verificación calidad del plástico marcador de DINAS</td>
+        <td class="col-opt"><input type="radio" name="plas_calidad_dinas" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="plas_calidad_dinas" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="plas_calidad_dinas" value="NA"></td>
+    </tr>
+
+    <tr>
+        <td class="col-num">4</td>
+        <td class="col-desc">Verificación calidad de plastificado</td>
+        <td class="col-opt"><input type="radio" name="plas_muestra_50" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="plas_muestra_50" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="plas_muestra_50" value="NA"></td>
+    </tr>
+
+    <tr>
+        <td class="col-num">4.1</td>
+        <td class="col-desc">Presenta burbujas</td>
+        <td class="col-opt"><input type="radio" name="plas_burbujas" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="plas_burbujas" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="plas_burbujas" value="NA"></td>
+    </tr>
+
+    <tr>
+        <td class="col-num">4.2</td>
+        <td class="col-desc">Se levanta el plastificado</td>
+        <td class="col-opt"><input type="radio" name="plas_levanta" value="SI" required></td>
+        <td class="col-opt"><input type="radio" name="plas_levanta" value="NO"></td>
+        <td class="col-opt"><input type="radio" name="plas_levanta" value="NA"></td>
+    </tr>
+    {# FIN ZONA EDITABLE. Mantener el bloque siguiente para que guarde responsable, fecha y observaciones. #}
+
+    <tr class="footer-row">
+        <td colspan="3" class="footer-cell">
+            <span class="footer-label">RESPONSABLE:</span>
+            <input type="text" name="responsable_plas" class="footer-input responsable-field" value="{{ usuario }}">
+        </td>
+        <td colspan="2" class="footer-cell footer-date">
+            <span class="footer-label">FECHA:</span>
+            <input type="text" name="fecha_plas" class="footer-input date-field" value="{{ fecha_checklist|default('') }}" readonly>
+        </td>
+    </tr>
+    <tr class="footer-row">
+        <td colspan="5" class="footer-cell">
+            <span class="footer-label">OBSERVACIONES:</span>
+            <textarea name="observaciones_plas" rows="2" class="footer-textarea"></textarea>
+        </td>
+    </tr>
+
+    <tr class="spacer-row"><td colspan="5"></td></tr>
+</tbody>
