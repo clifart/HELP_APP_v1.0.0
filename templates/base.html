@@ -19,8 +19,14 @@
         el.setAttribute("autocapitalize", "off");
         el.setAttribute("spellcheck", "false");
 
-        el.addEventListener("focus", () => el.removeAttribute("readonly"));
-        el.addEventListener("mousedown", () => el.removeAttribute("readonly"));
+        el.addEventListener("focus", () => {
+          el.removeAttribute("readonly");
+          el.removeAttribute("inputmode");
+        });
+        el.addEventListener("mousedown", () => {
+          el.removeAttribute("readonly");
+          el.removeAttribute("inputmode");
+        });
       });
     });
   </script>
