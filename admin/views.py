@@ -1023,6 +1023,7 @@ def modo_tecnico():
     if request.method == 'POST':
         clave = request.form.get('clave_tecnica', '').strip()
         if clave != CLAVE_TECNICA:
+            print(f"[DEBUG clave_tecnica] recibida={clave!r} len={len(clave)} bytes={clave.encode('utf-8')!r} | esperada={CLAVE_TECNICA!r} len={len(CLAVE_TECNICA)} bytes={CLAVE_TECNICA.encode('utf-8')!r}", flush=True)
             flash("Clave técnica incorrecta.", "danger")
             return redirect(url_for('admin.panel'))
         session['clave_tecnica'] = CLAVE_TECNICA
