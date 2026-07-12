@@ -8,28 +8,6 @@
 
   <!-- 🚫 Desactivar autocompletado y guardado de contraseñas en toda la app -->
   <meta name="autocomplete" content="off">
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      // Solo para el campo clave técnica
-      document.querySelectorAll("input[name='clave_tecnica']").forEach(el => {
-        el.setAttribute("autocomplete", "off");
-        el.setAttribute("readonly", "true");
-        el.setAttribute("inputmode", "none");
-        el.setAttribute("autocorrect", "off");
-        el.setAttribute("autocapitalize", "off");
-        el.setAttribute("spellcheck", "false");
-
-        el.addEventListener("focus", () => {
-          el.removeAttribute("readonly");
-          el.removeAttribute("inputmode");
-        });
-        el.addEventListener("mousedown", () => {
-          el.removeAttribute("readonly");
-          el.removeAttribute("inputmode");
-        });
-      });
-    });
-  </script>
 
 
   <!-- CSS global -->
