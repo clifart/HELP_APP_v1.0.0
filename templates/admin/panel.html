@@ -201,6 +201,10 @@
             <input type="password" id="input_clave_tecnica" name="clave_tecnica" placeholder="Clave tecnica"
               style="padding:4px;" required autocomplete="new-password" autocorrect="off" autocapitalize="none"
               spellcheck="false">
+            <label style="font-size:12px;">
+              <input type="checkbox" onclick="document.getElementById('input_clave_tecnica').type = this.checked ? 'text' : 'password';">
+              👁 mostrar
+            </label>
             <button type="submit" class="btn btn-dark btn-sm">Modo Tecnico</button>
           </form>
 
