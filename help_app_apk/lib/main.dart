@@ -38,8 +38,7 @@ class TrazOpWebView extends StatefulWidget {
 class _TrazOpWebViewState extends State<TrazOpWebView> {
   static const String _defaultUrl = String.fromEnvironment(
     'HELP_APP_URL',
-    defaultValue:
-        'https://trazop-pruebas-2026-e6guf3hacfb9c8ak.mexicocentral-01.azurewebsites.net/',
+    defaultValue: 'https://<tu-usuario>.pythonanywhere.com/',
   );
 
   late final WebViewController _controller;
@@ -163,8 +162,7 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
             keyboardType: TextInputType.url,
             decoration: const InputDecoration(
               labelText: 'URL',
-              hintText:
-                  'https://trazop-pruebas-2026-e6guf3hacfb9c8ak.mexicocentral-01.azurewebsites.net/',
+              hintText: 'https://<tu-usuario>.pythonanywhere.com/',
             ),
           ),
           actions: [
