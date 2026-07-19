@@ -27,8 +27,13 @@
       </select>
     {% else %}
       <p style="color: #b71c1c; font-weight: 500;">
-        ⚠️ No hay usuarios registrados aún. Inicia sesión como administrador para crearlos.
+        ⚠️ No hay usuarios registrados aún.
       </p>
+      <a
+        href="{{ url_for('configurar_admin_inicial') }}"
+        class="btn btn-verde"
+        style="display:block;text-decoration:none;text-align:center;margin-bottom:12px;"
+      >Crear administrador inicial</a>
     {% endif %}
 
    <!-- Campo de contraseña sin autocompletado -->
@@ -54,7 +59,7 @@
 
 
     <!-- Botón de ingreso -->
-    <button type="submit" class="btn btn-verde">Entrar</button>
+    <button type="submit" class="btn btn-verde"{% if not usuarios %} disabled{% endif %}>Entrar</button>
   </form>
 
   <!-- Mensaje informativo -->

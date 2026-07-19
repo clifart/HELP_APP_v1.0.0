@@ -4,6 +4,7 @@ import os
 import sqlite3
 from datetime import datetime, timedelta
 
+from core import local_now
 from core.db import get_db_connection
 from core.registro_diario import CARPETA_TAREAS_DIARIAS
 
@@ -85,7 +86,7 @@ def _write_csv(path, headers, rows):
 
 
 def _mes_dia(fecha):
-    fecha = fecha or datetime.now()
+    fecha = fecha or local_now()
     return fecha.strftime("%Y_%m"), fecha.strftime("%d"), fecha.strftime("%Y_%m_%d_%H%M%S")
 
 
@@ -234,7 +235,7 @@ def _write_state(data):
 
 
 def ejecutar_mantenimiento_mensual_historial(force=False, now=None):
-    ahora = now or datetime.now()
+    ahora = now or local_now()
     mes_actual = ahora.strftime("%Y_%m")
     estado = _read_state()
     ultimo_mes = estado.get("ultimo_mes_procesado")

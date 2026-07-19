@@ -3,8 +3,10 @@ import sys
 import socket
 import threading
 import webbrowser
+import time
 
 from flask import Flask, request
+from werkzeug.middleware.proxy_fix import ProxyFix
 from core.db import ensure_schema  # solo esto desde core.db aquí
 
 
@@ -78,12 +80,20 @@ def create_app():
         "HELP_APP_SECRET_KEY",
         "cambia-esta-clave-super-secreta",
     )
+    # PythonAnywhere termina HTTPS delante de Flask. Estas cabeceras permiten
+    # que Flask detecte correctamente el protocolo y el host publicos.
+    if os.environ.get("HELP_APP_HOSTING") == "pythonanywhere":
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     app.config["MASTER_KEY"] = os.environ.get("HELP_APP_MASTER_KEY", "HELPAPP_2025")
     app.config.setdefault("DEBUG_AVISO_SEG", 0)
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-    app.config["SESSION_COOKIE_SECURE"] = (
-        os.environ.get("HELP_APP_HTTPS", "0").strip() == "1"
+    app.config["SESSION_COOKIE_SECURE"] = os.environ.get(
+        "HELP_APP_HTTPS",
+        "1" if os.environ.get("HELP_APP_HOSTING") == "pythonanywhere" else "0",
+    ).strip() == "1"
+    app.config["PREFERRED_URL_SCHEME"] = (
+        "https" if app.config["SESSION_COOKIE_SECURE"] else "http"
     )
 
     # =========================
@@ -101,9 +111,15 @@ def create_app():
     if os.environ.get("HELP_APP_ENABLE_AUTOCIERRE", "1").strip() == "1":
         try:
             from core.auto_cierre import iniciar_hilo_autocierre
-            iniciar_hilo_autocierre()
+            intervalo = int(os.environ.get("HELP_APP_AUTOCIERRE_INTERVAL", "60"))
+            iniciar_hilo_autocierre(intervalo_seg=max(30, intervalo))
         except Exception as e:
             print(f"[WARN] No se pudo iniciar el hilo de autocierre: {e}")
+
+    # Respaldo para WSGI: ejecuta el autocierre al recibir actividad aunque el
+    # proceso haya sido reciclado y el hilo todavia no haya alcanzado su ciclo.
+    autocierre_state = {"ultima_revision": 0.0}
+    autocierre_lock = threading.Lock()
 
     @app.before_request
     def _mantenimiento_historial_fin_mes():
@@ -114,6 +130,18 @@ def create_app():
             ejecutar_mantenimiento_mensual_historial()
         except Exception as e:
             print(f"[WARN] Mantenimiento mensual de historial omitido: {e}")
+        ahora_monotonic = time.monotonic()
+        if ahora_monotonic - autocierre_state["ultima_revision"] >= 60:
+            if autocierre_lock.acquire(blocking=False):
+                try:
+                    if time.monotonic() - autocierre_state["ultima_revision"] >= 60:
+                        from core.auto_cierre import ejecutar_autocierre
+                        ejecutar_autocierre()
+                        autocierre_state["ultima_revision"] = time.monotonic()
+                except Exception as e:
+                    print(f"[WARN] Autocierre oportunista omitido: {e}")
+                finally:
+                    autocierre_lock.release()
         return None
 
     # =========================
@@ -215,6 +243,75 @@ def create_app():
         usuarios = conn.execute("SELECT nombre, rol FROM usuarios").fetchall()
         conn.close()
         return render_template("login.html", usuarios=usuarios)
+
+    @app.route("/configurar_admin_inicial", methods=["GET", "POST"])
+    def configurar_admin_inicial():
+        from flask import render_template, request, redirect, url_for, flash, session
+        from core.db import get_db_connection
+        from werkzeug.security import generate_password_hash
+
+        conn = get_db_connection()
+        total_usuarios = conn.execute("SELECT COUNT(*) FROM usuarios").fetchone()[0]
+        if total_usuarios:
+            conn.close()
+            flash("El administrador inicial ya fue configurado.", "info")
+            return redirect(url_for("login"))
+
+        if request.method == "POST":
+            clave_tecnica = (request.form.get("clave_tecnica") or "").strip()
+            nombre = (request.form.get("nombre") or "").strip().upper()
+            celular = (request.form.get("celular") or "").strip()
+            contrasena = (request.form.get("contrasena") or "").strip()
+            confirmar = (request.form.get("confirmar") or "").strip()
+
+            if clave_tecnica != app.config["MASTER_KEY"]:
+                conn.close()
+                flash("Clave técnica incorrecta.", "danger")
+                return redirect(url_for("configurar_admin_inicial"))
+            if not nombre:
+                conn.close()
+                flash("El nombre del administrador es obligatorio.", "warning")
+                return redirect(url_for("configurar_admin_inicial"))
+            if len(contrasena) < 4:
+                conn.close()
+                flash("La contraseña debe tener al menos 4 caracteres.", "warning")
+                return redirect(url_for("configurar_admin_inicial"))
+            if contrasena != confirmar:
+                conn.close()
+                flash("Las contraseñas no coinciden.", "danger")
+                return redirect(url_for("configurar_admin_inicial"))
+            if contrasena == "1234":
+                conn.close()
+                flash("Elige una contraseña diferente de 1234.", "warning")
+                return redirect(url_for("configurar_admin_inicial"))
+
+            try:
+                conn.execute(
+                    """
+                    INSERT INTO usuarios
+                        (nombre, celular, contrasena, rol, must_change_password)
+                    VALUES (?, ?, ?, 'admin', 0)
+                    """,
+                    (
+                        nombre,
+                        celular,
+                        generate_password_hash(contrasena, method="scrypt"),
+                    ),
+                )
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                conn.close()
+                flash("No se pudo crear el administrador inicial.", "danger")
+                return redirect(url_for("configurar_admin_inicial"))
+
+            conn.close()
+            session.clear()
+            flash("Administrador inicial creado. Ya puedes ingresar.", "success")
+            return redirect(url_for("login"))
+
+        conn.close()
+        return render_template("primer_admin.html")
 
     @app.route("/cerrar_aplicacion_autocierre")
     def cerrar_aplicacion_autocierre():
@@ -326,15 +423,15 @@ def create_app():
 
             if len(nueva) < 4:
                 conn.close()
-                return "<h3>⚠️ Min 4 caracteres</h3><a href='/cambiar_password'>Volver</a>", 400
+                return "<h3>Mínimo 4 caracteres</h3><a href='/cambiar_password'>Volver</a>", 400
 
             if nueva != confirmar:
                 conn.close()
-                return "<h3>⚠️ No coinciden</h3><a href='/cambiar_password'>Volver</a>", 400
+                return "<h3>Las contraseñas no coinciden</h3><a href='/cambiar_password'>Volver</a>", 400
 
             if nueva == "1234":
                 conn.close()
-                return "<h3>⚠️ No puedes dejar 1234</h3><a href='/cambiar_password'>Volver</a>", 400
+                return "<h3>No puedes dejar 1234</h3><a href='/cambiar_password'>Volver</a>", 400
 
             # Guardar hash scrypt (igual que tu reset)
             hashed = generate_password_hash(nueva, method="scrypt")

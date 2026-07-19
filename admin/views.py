@@ -10,6 +10,7 @@ from core.registro_diario import registrar_tarea_diaria, CARPETA_TAREAS_DIARIAS 
 from core.exportar_excel import exportar_excel_automatico  # ðŸ‘ˆ
 import sqlite3
 import os
+import re
 import sys
 import subprocess
 from flask import current_app
@@ -490,6 +491,13 @@ def agregar_op():
     titulo = request.form.get('titulo', '').strip().upper()       # OP No.
     descripcion = request.form.get('descripcion', '').strip().upper()
     proceso = request.form.get('proceso', '').strip()
+
+    if titulo and re.fullmatch(r"[A-Z0-9]{1,8}", titulo) is None:
+        flash(
+            "La OP debe ser alfanumérica y tener máximo 8 caracteres.",
+            "warning",
+        )
+        return redirect(url_for('admin.panel'))
 
     if not titulo or not descripcion:
         flash("âš ï¸ OP y DescripciÃ³n son obligatorias.", "warning")

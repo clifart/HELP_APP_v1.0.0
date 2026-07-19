@@ -1,108 +1,87 @@
-# TrazOp en PythonAnywhere
+# Publicar TrazOp en PythonAnywhere
 
-Esta configuración describe cómo desplegar TrazOp en PythonAnywhere.
-PythonAnywhere ofrece un entorno Python gestionado que puede ejecutar Flask
-y almacenará los datos persistentes en tu directorio `/home/<usuario>`.
+Con este despliegue el servidor queda en internet y el celular deja de depender
+de VS Code, del PC y de la red Wi-Fi local.
 
-## Requisitos previos
+## 1. Subir el codigo
 
-- Cuenta en https://www.pythonanywhere.com/
-- Python 3.11 disponible en tu cuenta
-- Repositorio clonado o copiado en tu directorio de usuario
-  (por ejemplo `/home/<usuario>/HELP_APP_v1.0.0`)
+Abre una consola Bash en PythonAnywhere y deja el proyecto, por ejemplo, en:
 
-## Pasos de despliegue
-
-1. En PythonAnywhere, crea un nuevo "Web app".
-2. Selecciona "Manual configuration" y elige Python 3.11.
-3. En la pestaña "Web" configura:
-   - Source code: `/home/<usuario>/HELP_APP_v1.0.0`
-   - Virtualenv: `/home/<usuario>/.virtualenvs/help_app` o similar
-   - WSGI configuration file: editar según los pasos siguientes
-
-## Configurar virtualenv
-
-En la consola de PythonAnywhere ejecuta:
-
-```bash
-python3.11 -m venv ~/.virtualenvs/help_app
-source ~/.virtualenvs/help_app/bin/activate
-pip install -r ~/HELP_APP_v1.0.0/requirements.txt
+```text
+/home/TU_USUARIO/HELP_APP
 ```
 
-> Si tu cuenta no tiene `python3.11`, usa la versión disponible más cercana.
+Crea el entorno e instala las dependencias:
 
-## Configurar el archivo WSGI
+```bash
+cd /home/TU_USUARIO/HELP_APP
+python3.13 -m venv /home/TU_USUARIO/.virtualenvs/trazop
+/home/TU_USUARIO/.virtualenvs/trazop/bin/pip install -r requirements_server.txt
+```
 
-Edita el archivo WSGI que creó PythonAnywhere y reemplaza su contenido por:
+## 2. Crear la Web App
+
+En **Web > Add a new web app** selecciona **Manual configuration** y la misma
+version de Python del entorno. En **Virtualenv** escribe:
+
+```text
+/home/TU_USUARIO/.virtualenvs/trazop
+```
+
+Reemplaza el contenido del archivo WSGI que muestra PythonAnywhere por:
 
 ```python
-import sys
 import os
+import sys
 
-project_home = '/home/<usuario>/HELP_APP_v1.0.0'
+project_home = "/home/TU_USUARIO/HELP_APP"
 if project_home not in sys.path:
     sys.path.insert(0, project_home)
 
-os.environ['PYTHONPATH'] = project_home
+os.environ["HELP_APP_MASTER_KEY"] = "CAMBIA_ESTA_CLAVE_TECNICA"
 
-from app import app as application
+from pythonanywhere_wsgi import application
 ```
 
-## Variables de entorno
+No publiques la clave tecnica en el repositorio. El punto de entrada crea y
+conserva automaticamente la clave privada de sesiones en `~/.trazop` y guarda
+los datos persistentes en `~/trazop-data`.
 
-En la pestaña "Web" de PythonAnywhere, agrega estas variables en "Environment
-django or flask app settings" (o similar):
+En **Static files** configura:
 
 ```text
-HELP_APP_DATA_DIR=/home/<usuario>/help_app_data
-HELP_APP_SECRET_KEY=<clave-aleatoria-larga>
-HELP_APP_MASTER_KEY=<clave-tecnica-privada>
-HELP_APP_HTTPS=1
-HELP_APP_ENABLE_AUTOCIERRE=1
+URL:       /static/
+Directory: /home/TU_USUARIO/HELP_APP/static
 ```
 
-- `HELP_APP_DATA_DIR` es la carpeta donde se guardará `database.db` y otros
-  archivos persistentes.
-- En PythonAnywhere, `/home/<usuario>` es persistente, por lo que es una buena
-  ubicación para `HELP_APP_DATA_DIR`.
+Pulsa **Reload** y abre:
 
-## Crear la carpeta de datos persistentes
+```text
+https://TU_USUARIO.pythonanywhere.com/
+```
 
-En la consola de PythonAnywhere ejecuta:
+## 3. Preparar el APK
+
+Para dejar el dominio incorporado en el APK:
 
 ```bash
-mkdir -p /home/<usuario>/help_app_data
-ls -ld /home/<usuario>/help_app_data
+cd help_app_apk
+flutter pub get
+flutter build apk --release --dart-define=HELP_APP_URL=https://TU_USUARIO.pythonanywhere.com/
 ```
 
-Si tienes una base de datos inicial, copia `database.db` a esa carpeta:
+El archivo instalable queda en:
 
-```bash
-cp ~/HELP_APP_v1.0.0/database.db /home/<usuario>/help_app_data/database.db
+```text
+help_app_apk/build/app/outputs/flutter-apk/app-release.apk
 ```
 
-## Reiniciar la aplicación
+Si se compila sin `HELP_APP_URL`, el celular pedira el usuario de
+PythonAnywhere la primera vez y lo conservara. Ambas opciones funcionan sin el
+PC encendido.
 
-Después de instalar dependencias y configurar el WSGI, guarda los cambios y
-pulsa "Reload" en la pestaña Web.
+## Actualizaciones
 
-## APK y URL del servidor
-
-Para compilar el APK móvil que apunte a PythonAnywhere, usa:
-
-```bash
-flutter build apk --release --dart-define=HELP_APP_URL=https://<usuario>.pythonanywhere.com/
-```
-
-También puedes cambiar la URL directamente en la app desde el botón de
-configuración del WebView.
-
-## Notas importantes
-
-- PythonAnywhere puede suspender la app por inactividad si usas el plan
-  gratuito.
-- Asegúrate de no guardar la base de datos en el directorio de código si
-  planeas actualizar el repositorio.
-- La app ya soporta `HELP_APP_DATA_DIR`, así que puedes apuntar los datos a
-  una ruta persistente independiente del código.
+Tras subir cambios al codigo, instala dependencias solo si cambio el archivo de
+requisitos y pulsa **Reload** en la pestaña Web. No es necesario recompilar el
+APK mientras el dominio siga siendo el mismo.

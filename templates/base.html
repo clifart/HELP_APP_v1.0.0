@@ -14,7 +14,6 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20260712-ui2') }}">
 
   <!-- Librería para animaciones (opcional pero bonita) -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
   <!-- CSS específico del panel -->
   {% block extra_css %}{% endblock %}
@@ -29,7 +28,7 @@
   <div class="flash-container"
     style="position: fixed; top: 15px; right: 15px; z-index: 2000; width: auto; max-width: 400px;">
     {% for category, message in messages %}
-    <div class="alert alert-{{ category }} shadow-sm rounded-pill px-4 py-2 mb-2 animate__animated animate__fadeInDown"
+    <div class="alert alert-{{ category }} shadow-sm rounded-pill px-4 py-2 mb-2"
       style="display: flex; align-items: center; font-weight: 500; color: #fff;
                         {% if category == 'success' %} background-color: #28a745;
                         {% elif category == 'warning' %} background-color: #ffc107; color: #212529;

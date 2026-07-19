@@ -112,9 +112,11 @@
             <div class="grupo-inputs">
 
               <!-- âœ… OP No. SOLO NÃšMEROS -->
-              <input type="text" name="titulo" placeholder="OP No. (Ej: 09101)" required inputmode="numeric"
-                pattern="[0-9]+" maxlength="15" autocomplete="off"
-                oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+              <input type="text" name="titulo" placeholder="OP No. (Ej: AB09101)" required inputmode="text"
+                pattern="[A-Za-z0-9]{1,8}" minlength="1" maxlength="8" autocomplete="off"
+                autocapitalize="characters" spellcheck="false"
+                title="Usa de 1 a 8 letras o números"
+                oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);">
 
               <input type="text" name="descripcion" placeholder="Ej: Cajas..." required>
             </div>

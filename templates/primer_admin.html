@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="login-container primer-admin-container">
+  <img
+    src="{{ url_for('static', filename='img/helpapp2.png') }}"
+    alt="TrazOp"
+    class="login-logo"
+  >
+
+  <h2>Administrador inicial</h2>
+  <p class="primer-admin-ayuda">
+    Configura el primer acceso de esta instalación autónoma de TrazOp.
+    Esta opción sólo está disponible mientras no exista ningún usuario.
+  </p>
+
+  <form method="POST" autocomplete="off" class="login-form primer-admin-form">
+    <label for="clave_tecnica">Clave técnica</label>
+    <input
+      id="clave_tecnica"
+      name="clave_tecnica"
+      type="password"
+      required
+      autocomplete="new-password"
+      autocapitalize="none"
+      spellcheck="false"
+    >
+
+    <label for="nombre">Nombre del administrador</label>
+    <input id="nombre" name="nombre" type="text" required autocomplete="off">
+
+    <label for="celular">Celular (opcional)</label>
+    <input id="celular" name="celular" type="tel" autocomplete="off">
+
+    <label for="contrasena">Contraseña</label>
+    <input
+      id="contrasena"
+      name="contrasena"
+      type="password"
+      minlength="4"
+      required
+      autocomplete="new-password"
+    >
+
+    <label for="confirmar">Confirmar contraseña</label>
+    <input
+      id="confirmar"
+      name="confirmar"
+      type="password"
+      minlength="4"
+      required
+      autocomplete="new-password"
+    >
+
+    <button type="submit" class="btn btn-verde">Crear administrador</button>
+    <a href="{{ url_for('login') }}" class="primer-admin-volver">Volver</a>
+  </form>
+</div>
+
+<style>
+  .primer-admin-container {
+    width: min(92vw, 430px);
+    box-sizing: border-box;
+  }
+  .primer-admin-container h2 {
+    color: #15614f;
+    margin: 4px 0 8px;
+  }
+  .primer-admin-ayuda {
+    color: #555;
+    line-height: 1.4;
+    margin-bottom: 16px;
+  }
+  .primer-admin-form label {
+    display: block;
+    text-align: left;
+    font-weight: 600;
+    margin: 8px 0 4px;
+  }
+  .primer-admin-form input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .primer-admin-form .btn {
+    margin-top: 14px;
+  }
+  .primer-admin-volver {
+    display: block;
+    margin-top: 14px;
+    color: #15614f;
+    text-align: center;
+    font-weight: 600;
+    text-decoration: none;
+  }
+</style>
+{% endblock %}

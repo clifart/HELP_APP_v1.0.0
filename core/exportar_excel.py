@@ -6,6 +6,7 @@ from datetime import datetime
 from flask import current_app
 
 from openpyxl import Workbook
+from core import local_now
 
 
 def _auto_ajustar_ancho(ws, headers, filas, max_width=50):
@@ -94,7 +95,7 @@ def exportar_excel_automatico(conn):
     carpeta_base = os.path.join(base_dir, "EXPORT_EXCEL_AUTO")
     os.makedirs(carpeta_base, exist_ok=True)
 
-    hoy = datetime.now().strftime("%Y-%m-%d")
+    hoy = local_now().strftime("%Y-%m-%d")
     carpeta_hoy = os.path.join(carpeta_base, hoy)
     os.makedirs(carpeta_hoy, exist_ok=True)
 

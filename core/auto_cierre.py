@@ -12,6 +12,10 @@ from core.horarios import (
 from core.autocierre_config import AUTO_CIERRE_LIMITE_SEG, AUTO_CIERRE_TOTAL_HORAS
 from core.horas_extras import calcular_tiempo_total_y_horas_extras
 
+
+_thread_lock = threading.Lock()
+_autocierre_thread = None
+
 try:
     from core.registro_diario import registrar_tarea_diaria
 except Exception as e:
@@ -280,11 +284,16 @@ def _loop_autocierre(intervalo_seg=10):
 
 
 def iniciar_hilo_autocierre(intervalo_seg=10):
-    print(f"[SISTEMA] Hilo de autocierre iniciado (cada {intervalo_seg}s)")
-    t = threading.Thread(
-        target=_loop_autocierre,
-        args=(intervalo_seg,),
-        daemon=True
-    )
-    t.start()
-    return t
+    global _autocierre_thread
+    with _thread_lock:
+        if _autocierre_thread is not None and _autocierre_thread.is_alive():
+            return _autocierre_thread
+        print(f"[SISTEMA] Hilo de autocierre iniciado (cada {intervalo_seg}s)")
+        _autocierre_thread = threading.Thread(
+            target=_loop_autocierre,
+            args=(intervalo_seg,),
+            daemon=True,
+            name="trazop-autocierre",
+        )
+        _autocierre_thread.start()
+        return _autocierre_thread

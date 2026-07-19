@@ -2,7 +2,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="TrazOp"
-        android:name="${applicationName}"
+        android:name="com.chaquo.python.android.PyApplication"
         android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher">
         <activity

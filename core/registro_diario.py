@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 
 from openpyxl import Workbook, load_workbook
+from core import local_now
 
 
 def _app_dir() -> str:
@@ -68,7 +69,7 @@ def get_carpeta_diaria():
     """
     os.makedirs(CARPETA_TAREAS_DIARIAS, exist_ok=True)
 
-    hoy = datetime.now().strftime("%Y_%m_%d")
+    hoy = local_now().strftime("%Y_%m_%d")
     carpeta_hoy = os.path.join(CARPETA_TAREAS_DIARIAS, hoy)
     os.makedirs(carpeta_hoy, exist_ok=True)
 
@@ -86,7 +87,7 @@ def consolidar_mes_xlsx(mes=None):
     Devuelve la ruta del archivo generado.
     """
     if mes is None:
-        mes = datetime.now().strftime("%Y_%m")
+        mes = local_now().strftime("%Y_%m")
 
     os.makedirs(CARPETA_TAREAS_DIARIAS, exist_ok=True)
 
@@ -422,7 +423,7 @@ def _calcular_fecha_elaboracion(fin: str) -> str:
             return datetime.strptime(fin, fmt).strftime("%Y-%m-%d")
         except Exception:
             pass
-    return datetime.now().strftime("%Y-%m-%d")
+    return local_now().strftime("%Y-%m-%d")
 
 
 # ==========================================================

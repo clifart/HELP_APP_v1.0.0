@@ -26,6 +26,9 @@ DB_PATH = DATA_DIR / "database.db"
 
 
 def _initialize_persistent_database():
+    copy_seed = os.environ.get("HELP_APP_COPY_SEED_DATABASE", "1").strip()
+    if copy_seed != "1":
+        return
     source_db = APP_DIR / "database.db"
     if DB_PATH == source_db or DB_PATH.exists() or not source_db.exists():
         return
@@ -171,9 +174,16 @@ def ensure_schema():
                 nombre TEXT UNIQUE,
                 celular TEXT,
                 contrasena TEXT,
-                rol TEXT
+                rol TEXT,
+                must_change_password INTEGER DEFAULT 0
             );
         """)
+        _ensure_column(
+            conn,
+            "usuarios",
+            "must_change_password",
+            "INTEGER DEFAULT 0",
+        )
 
         # tareas (definición base)
         conn.execute("""
