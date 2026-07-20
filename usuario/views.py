@@ -106,7 +106,7 @@ def _omite_checklist_y_cantidad(nombre: str) -> bool:
     Procesos exentos de checklist y cantidad para finalizar.
     """
     norm = _normalizar_proceso(nombre)
-    return norm in {"ALISTAMIENTO", "ALISTAMIENTO PRE IMPRESION", "DESCARTONE", "MANTENIMIENTO PREVENTIVO", "REPROCESO"}
+    return norm in {"ALISTAMIENTO", "ALISTAMIENTO PRE IMPRESION", "DESCARTONE", "REPROCESO"}
 
 
 def _omite_cantidad(nombre: str) -> bool:
@@ -114,7 +114,7 @@ def _omite_cantidad(nombre: str) -> bool:
     Procesos que no manejan cantidad, aunque algunos sí requieren checklist.
     """
     norm = _normalizar_proceso(nombre)
-    return _omite_checklist_y_cantidad(nombre) or norm == "VARIOS"
+    return _omite_checklist_y_cantidad(nombre) or norm in {"VARIOS", "MANTENIMIENTO PREVENTIVO"}
 
 
 def _es_impresion(nombre: str) -> bool:
@@ -256,6 +256,10 @@ def _modulo_por_proceso(nombre: str) -> Optional[str]:
     # CORTE usa una variante propia de la plantilla de impresión.
     if norm == "CORTE" or norm.startswith("CORTE "):
         return "corte"
+
+    # MANTENIMIENTO PREVENTIVO
+    if norm == "MANTENIMIENTO PREVENTIVO":
+        return "mantenimiento_preventivo"
 
     # MANTENIMIENTO SORMZ/SORM BARNIZADO
     # Acepta variantes como: "MANTENIMIENTO ... BARNIZADO" o "SORMZ-SORM BARNIZADO"
@@ -1603,6 +1607,8 @@ def checklist_impresion():
         template_name = "usuario/checklist_troquelado_refilado.html"
     if modulo_activo == "flexo":
         template_name = "usuario/checklist_flexo.html"
+    if modulo_activo == "mantenimiento_preventivo":
+        template_name = "usuario/checklist_mantenimiento_sormz_sorm_barnizado.html"
     if modulo_activo == "mantenimiento_sormz_sorm_barnizado" or ("sorm" in modulo_activo and "barniz" in modulo_activo):
         template_name = "usuario/checklist_mantenimiento_sormz_sorm_barnizado.html"
     if modulo_activo == "encuadernacion":

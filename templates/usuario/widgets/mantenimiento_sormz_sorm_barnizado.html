@@ -3,13 +3,13 @@
    Como editar:
    - Edita solamente las filas <tr> ubicadas entre "INICIO ZONA EDITABLE" y "FIN ZONA EDITABLE".
    - El name debe ser unico en todo el checklist.
-   - No cambies data-module="mantenimiento_sormz_sorm_barnizado" ni el bloque de responsable/fecha/observaciones.
+   - El data-module toma el módulo activo para que este formulario también sirva a MANTENIMIENTO PREVENTIVO.
    - No hace falta tocar Python para guardar nuevas lineas: se guardan en checklist_modulos.data_json.
 #}
-<tbody class="module" data-module="mantenimiento_sormz_sorm_barnizado">
+<tbody class="module" data-module="{{ (modulo_activo or 'mantenimiento_sormz_sorm_barnizado')|lower }}">
                     <tr class="section-row">
                         <td class="col-num">I</td>
-                        <td class="col-desc section-title">MANTENIMIENTO DE MAQUINAS</td>
+                        <td class="col-desc section-title">Primera y tercera semana de cada mes</td>
                         <td class="col-opt opt-head"></td>
                         <td class="col-opt opt-head"></td>
                         <td class="col-opt opt-head"></td>
@@ -18,19 +18,11 @@
     {# INICIO ZONA EDITABLE: agrega, elimina o renumera puntos del checklist aqui. #}
 
                     {% set items = [
-                        ("1",  "Limpieza transporte pliego", "mant_limpieza_transporte_pliego"),
-                        ("2",  "Limpieza salida (Pila de papel)", "mant_limpieza_salida_pila"),
-                        ("3",  "Limpieza cilindros ranger y traspaso", "mant_limpieza_cilindros"),
-                        ("4",  "Lubricacion", "mant_lubricacion"),
-                        ("5",  "Limpieza canaletas", "mant_limpieza_canaletas"),
-                        ("6",  "Lavado de inmersores", "mant_lavado_inmersores"),
-                        ("7",  "Lavado de dosificadores", "mant_lavado_dosificadores"),
-                        ("8",  "Lavado Baldwin (Nevera)", "mant_lavado_baldwin"),
-                        ("9",  "Centrifugado (3 veces)", "mant_centrifugado"),
-                        ("10", "Preparacion solucion de fuente", "mant_preparacion_solucion"),
-                        ("11", "Limpieza de banda transportadora", "mant_limpieza_banda"),
-                        ("12", "Verificacion parte interna de banda transportadora (que no hayan papeles)", "mant_verificacion_banda_interna"),
-                        ("13", "Verificacion de bombilla UV", "mant_verificacion_bombilla_uv")
+                        ("1", "Lavado de Baldwin", "mant_prev_13_lavado_baldwin"),
+                        ("2", "Lavado de canaletas", "mant_prev_13_lavado_canaletas"),
+                        ("3", "Bajado de inmersores y limpieza de los mismos", "mant_prev_13_inmersores"),
+                        ("4", "Recirculación de agua con hipoclorito para la limpieza de los conductos por donde circula el agua", "mant_prev_13_recirculacion_hipoclorito"),
+                        ("5", "Llenar el Baldwin con 50 litros de agua. El turno entrante adicionará la solución de agua y alcohol", "mant_prev_13_llenado_baldwin")
                     ] %}
 
                     {% for n, desc, key in items %}
@@ -43,6 +35,47 @@
                     </tr>
                     {% endfor %}
 
+                    <tr class="section-row">
+                        <td class="col-num">II</td>
+                        <td class="col-desc section-title">Segunda y cuarta semana de cada mes</td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                        <td class="col-opt opt-head"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="col-num">1</td>
+                        <td class="col-desc"><strong>Limpieza de la salida de impresión</strong></td>
+                        <td class="col-opt"><input type="radio" name="mant_prev_24_salida_impresion" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="mant_prev_24_salida_impresion" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="mant_prev_24_salida_impresion" value="NA"></td>
+                    </tr>
+
+                    {% set salida_impresion = [
+                        ("1.1", "Salvapliegos", "mant_prev_24_salvapliegos"),
+                        ("1.2", "Pinzas", "mant_prev_24_pinzas"),
+                        ("1.3", "Filtros", "mant_prev_24_filtros"),
+                        ("1.4", "Lubricación", "mant_prev_24_lubricacion")
+                    ] %}
+
+                    {% for n, desc, key in salida_impresion %}
+                    <tr class="subitem">
+                        <td class="col-num">{{ n }}</td>
+                        <td class="col-desc">{{ desc }}</td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="{{ key }}" value="NA"></td>
+                    </tr>
+                    {% endfor %}
+
+                    <tr>
+                        <td class="col-num">2</td>
+                        <td class="col-desc">Dejar la máquina limpia para el inicio de actividades</td>
+                        <td class="col-opt"><input type="radio" name="mant_prev_24_maquina_limpia" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="mant_prev_24_maquina_limpia" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="mant_prev_24_maquina_limpia" value="NA"></td>
+                    </tr>
+
     {# FIN ZONA EDITABLE. Mantener el bloque siguiente para que guarde responsable, fecha y observaciones. #}
 
                     <tr class="footer-row">
@@ -50,20 +83,20 @@
                             <span class="footer-label">RESPONSABLE:</span>
                             <input
                               type="text"
-                              name="responsable_mantenimiento"
+                              name="responsable_mantenimiento_preventivo"
                               class="footer-input responsable-field"
                               value="{{ usuario }}"
                             >
                         </td>
                         <td colspan="2" class="footer-cell footer-date">
                             <span class="footer-label">FECHA:</span>
-                            <input type="text" name="fecha_mantenimiento" class="footer-input date-field" value="{{ fecha_checklist|default('') }}" readonly>
+                            <input type="text" name="fecha_mantenimiento_preventivo" class="footer-input date-field" value="{{ fecha_checklist|default('') }}" readonly>
                         </td>
                     </tr>
                     <tr class="footer-row">
                         <td colspan="5" class="footer-cell">
                             <span class="footer-label">OBSERVACIONES:</span>
-                            <textarea name="observaciones_mantenimiento" rows="2" class="footer-textarea"></textarea>
+                            <textarea name="observaciones_mantenimiento_preventivo" rows="2" class="footer-textarea"></textarea>
                         </td>
                     </tr>
                 </tbody>
