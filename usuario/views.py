@@ -249,9 +249,9 @@ def _modulo_por_proceso(nombre: str) -> Optional[str]:
     """
     norm = _normalizar_proceso(nombre)
 
-    # FLEXO: temporalmente usa checklist de IMPRESION
+    # FLEXO usa su checklist específico.
     if "FLEXO" in norm:
-        return "impresion"
+        return "flexo"
 
     # CORTE usa una variante propia de la plantilla de impresión.
     if norm == "CORTE" or norm.startswith("CORTE "):
