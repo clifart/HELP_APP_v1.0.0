@@ -403,6 +403,35 @@ def _existe_checklist_modulo(
     return False
 
 
+def _cantidad_etiquetas_flexo(valor) -> int:
+    try:
+        cantidad = int(round(float(valor or 0)))
+    except (TypeError, ValueError, OverflowError):
+        return 0
+    return max(0, cantidad)
+
+
+def _cantidad_flexo_guardada(cur, usuario: str, op_no: str, tarea_id: Optional[int]) -> int:
+    try:
+        fila = cur.execute("""
+            SELECT data_json
+              FROM checklist_modulos
+             WHERE usuario = ?
+               AND op_no = ?
+               AND modulo = 'flexo'
+               AND COALESCE(tarea_id, 0) = COALESCE(?, 0)
+             ORDER BY id DESC
+             LIMIT 1
+        """, (usuario, op_no, tarea_id)).fetchone()
+        if not fila:
+            return 0
+        data_raw = fila[0] if isinstance(fila, tuple) else fila["data_json"]
+        data = json.loads(data_raw or "{}")
+        return _cantidad_etiquetas_flexo(data.get("flexo_etiquetas_por_rollo"))
+    except Exception:
+        return 0
+
+
 # -------------------------
 # PAUSA / REANUDAR (cronómetro sin contar pausas)
 # -------------------------
@@ -531,6 +560,10 @@ def panel():
         omite_cant = _omite_cantidad(tarea)
         cantidad_automatica = _es_flexo(tarea)
         ok_chk = True if omite_ctrl else _existe_checklist_modulo(cur, usuario, op.strip(), modulo, tarea_id=tid)
+        if cantidad_automatica and ok_chk:
+            cantidad_calculada = _cantidad_flexo_guardada(cur, usuario, op.strip(), tid)
+            if cantidad_calculada > 0:
+                cantidad = cantidad_calculada
 
         # Cálculo de tiempo real para el frontend (transcurrir el tiempo)
         seg_trans_neto = 0
@@ -791,7 +824,7 @@ def finalizar_tarea_usuario():
     omite_cant = _omite_cantidad(tarea)
 
     if _es_flexo(tarea):
-        cantidad = cantidad_db_actual
+        cantidad = _cantidad_flexo_guardada(cur, usuario, op_no, tarea_id) or cantidad_db_actual
         if cantidad <= 0:
             conn.close()
             return jsonify({
@@ -1574,10 +1607,7 @@ def checklist_impresion():
             return redirect(request.url)
         cantidad_flexo = None
         if modulo == "flexo":
-            try:
-                cantidad_flexo = int(round(float(request.form.get("flexo_etiquetas_por_rollo") or 0)))
-            except (TypeError, ValueError):
-                cantidad_flexo = 0
+            cantidad_flexo = _cantidad_etiquetas_flexo(request.form.get("flexo_etiquetas_por_rollo"))
             if cantidad_flexo <= 0:
                 conn.close()
                 flash("⚠️ El punto 4.6 debe generar una cantidad de etiquetas mayor que cero.", "warning")
