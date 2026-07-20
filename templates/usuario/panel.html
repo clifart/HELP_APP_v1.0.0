@@ -126,6 +126,7 @@
                     data-checklist-ok="{{ 1 if t.get('checklist_ok') else 0 }}"
                     data-omite-controles="{{ 1 if t.get('omite_controles') else 0 }}"
                     data-omite-cantidad="{{ 1 if t.get('omite_cantidad') else 0 }}"
+                    data-cantidad-automatica="{{ 1 if t.get('cantidad_automatica') else 0 }}"
                     data-op="{{ t.get('op') or '' }}"
                     data-descripcion="{{ t.get('descripcion') or '' }}"
                     data-tarea="{{ t.get('tarea') or '' }}"
@@ -155,7 +156,7 @@
                         {% if t.get('omite_cantidad') %}
                         <span class="sin-cantidad">N/A</span>
                         {% else %}
-                        <input type="number" min="0" class="cantidad-input" value="{{ t.get('cantidad') or 0 }}" disabled>
+                        <input type="number" min="0" class="cantidad-input" value="{{ t.get('cantidad') or 0 }}"{% if t.get('cantidad_automatica') %} title="Calculada por el punto 4.6 del checklist Flexo" readonly{% endif %} disabled>
                         {% endif %}
                     </td>
                     <td class="acciones-tarea-celda">
@@ -830,6 +831,7 @@
             const checklistOk    = (fila.dataset.checklistOk    || "0").trim() === "1";
             const omiteControles = (fila.dataset.omiteControles || "0").trim() === "1";
             const omiteCantidad  = (fila.dataset.omiteCantidad  || "0").trim() === "1";
+            const cantidadAutomatica = (fila.dataset.cantidadAutomatica || "0").trim() === "1";
             const cantidadInput  = fila.querySelector('.cantidad-input');
             const btnFinalizar   = fila.querySelector('.btn-finalizar');
             const btnChecklist   = fila.querySelector('.btn-checklist');
@@ -843,7 +845,7 @@
                 if (cantidadInput) cantidadInput.disabled = true;
                 if (btnFinalizar)  btnFinalizar.disabled  = false;
             } else if (checklistOk && estado !== "Pausada") {
-                if (cantidadInput) cantidadInput.disabled = omiteCantidad;
+                if (cantidadInput) cantidadInput.disabled = omiteCantidad || cantidadAutomatica;
                 if (btnFinalizar)  btnFinalizar.disabled  = false;
             }
             if (estado === "Pausada") {
@@ -903,10 +905,11 @@
                 const estado = (fila.getAttribute("data-estado")||"").trim();
                 const omiteControles = (fila.dataset.omiteControles||"0").trim()==="1";
                 const omiteCantidad = (fila.dataset.omiteCantidad||"0").trim()==="1";
+                const cantidadAutomatica = (fila.dataset.cantidadAutomatica||"0").trim()==="1";
                 if (estado !== "Pausada") {
                     const ci = fila.querySelector('.cantidad-input');
                     const bf = fila.querySelector('.btn-finalizar');
-                    if (ci) ci.disabled = omiteControles || omiteCantidad;
+                    if (ci) ci.disabled = omiteControles || omiteCantidad || cantidadAutomatica;
                     if (bf) bf.disabled = false;
                 }
                 _refrescarBotonesPausaFila(fila);
@@ -1011,7 +1014,8 @@
             const ci = fila.querySelector('.cantidad-input'); const bf = fila.querySelector('.btn-finalizar');
             const omiteControles = (fila.dataset.omiteControles || "0").trim() === "1";
             const omiteCantidad = (fila.dataset.omiteCantidad || "0").trim() === "1";
-            if (ci) ci.disabled = omiteControles || omiteCantidad; if (bf) bf.disabled = false;
+            const cantidadAutomatica = (fila.dataset.cantidadAutomatica || "0").trim() === "1";
+            if (ci) ci.disabled = omiteControles || omiteCantidad || cantidadAutomatica; if (bf) bf.disabled = false;
             _refrescarBotonesPausaFila(fila);
             mostrarAlerta("▶️ Tarea reanudada.");
         } catch (e) { mostrarAlerta(e.message || "⚠️ Error al reanudar."); }

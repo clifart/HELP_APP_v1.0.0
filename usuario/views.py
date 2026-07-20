@@ -126,6 +126,10 @@ def _es_impresion(nombre: str) -> bool:
     return "IMPRESION" in norm
 
 
+def _es_flexo(nombre: str) -> bool:
+    return "FLEXO" in _normalizar_proceso(nombre)
+
+
 def _hay_impresion_activa(conn, op_no: str) -> bool:
     """
     Devuelve True si para la OP dada hay ALGUNA tarea de tipo IMPRESION
@@ -525,6 +529,7 @@ def panel():
         modulo = _modulo_por_proceso(tarea) or "general"
         omite_ctrl = _omite_checklist_y_cantidad(tarea)
         omite_cant = _omite_cantidad(tarea)
+        cantidad_automatica = _es_flexo(tarea)
         ok_chk = True if omite_ctrl else _existe_checklist_modulo(cur, usuario, op.strip(), modulo, tarea_id=tid)
 
         # Cálculo de tiempo real para el frontend (transcurrir el tiempo)
@@ -559,6 +564,7 @@ def panel():
             "checklist_ok": bool(ok_chk),
             "omite_controles": bool(omite_ctrl),
             "omite_cantidad": bool(omite_cant),
+            "cantidad_automatica": bool(cantidad_automatica),
             "segundos_transcurridos": seg_trans_neto,
             "pausa_acum": pausa_acum_db,
         })
@@ -755,7 +761,8 @@ def finalizar_tarea_usuario():
         """SELECT titulo, descripcion, proceso, estado, inicio, fin,
                   COALESCE(pausa_acum,0) AS pausa_acum,
                   COALESCE(horario_extendido,0) AS horario_extendido,
-                  COALESCE(extendido_desde,'') AS extendido_desde
+                  COALESCE(extendido_desde,'') AS extendido_desde,
+                  COALESCE(cantidad,0) AS cantidad
            FROM tareas
            WHERE id=? AND asignado_a=?
            LIMIT 1""",
@@ -775,6 +782,7 @@ def finalizar_tarea_usuario():
     pausa_acum_db = int((fila_estado[6] if isinstance(fila_estado, tuple) else fila_estado["pausa_acum"]) or 0)
     horario_extendido_db = int((fila_estado[7] if isinstance(fila_estado, tuple) else fila_estado["horario_extendido"]) or 0)
     extendido_desde_db = (fila_estado[8] if isinstance(fila_estado, tuple) else fila_estado["extendido_desde"]) or ""
+    cantidad_db_actual = int((fila_estado[9] if isinstance(fila_estado, tuple) else fila_estado["cantidad"]) or 0)
 
     op_no = op_no or str(op_db).strip()
     descripcion = descripcion or str(desc_db).strip()
@@ -782,7 +790,15 @@ def finalizar_tarea_usuario():
     omite_ctrl = _omite_checklist_y_cantidad(tarea)
     omite_cant = _omite_cantidad(tarea)
 
-    if omite_cant:
+    if _es_flexo(tarea):
+        cantidad = cantidad_db_actual
+        if cantidad <= 0:
+            conn.close()
+            return jsonify({
+                "ok": False,
+                "msg": "El punto 4.6 del checklist Flexo debe generar una cantidad mayor que cero."
+            }), 400
+    elif omite_cant:
         cantidad = 0
     else:
         if not cantidad_raw.isdigit():
@@ -1556,6 +1572,16 @@ def checklist_impresion():
             conn.close()
             flash("⚠️ Debes llenar las observaciones para guardar el checklist.", "warning")
             return redirect(request.url)
+        cantidad_flexo = None
+        if modulo == "flexo":
+            try:
+                cantidad_flexo = int(round(float(request.form.get("flexo_etiquetas_por_rollo") or 0)))
+            except (TypeError, ValueError):
+                cantidad_flexo = 0
+            if cantidad_flexo <= 0:
+                conn.close()
+                flash("⚠️ El punto 4.6 debe generar una cantidad de etiquetas mayor que cero.", "warning")
+                return redirect(request.url)
         fecha = now_iso()
 
         data_dict = request.form.to_dict(flat=True)
@@ -1566,6 +1592,15 @@ def checklist_impresion():
             INSERT INTO checklist_modulos (usuario, op_no, modulo, tarea_id, fecha, data_json)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (usuario, op_no, modulo, tarea_id_int, fecha, json.dumps(data_dict, ensure_ascii=False)))
+
+        if modulo == "flexo" and tarea_id_int is not None:
+            cur.execute("""
+                UPDATE tareas
+                   SET cantidad = ?
+                 WHERE id = ?
+                   AND asignado_a = ?
+                   AND estado != 'Finalizado'
+            """, (cantidad_flexo, tarea_id_int, usuario))
 
         if modulo in {"impresion", "corte"}:
             p1 = (request.form.get('p1_entrega_paquete') or 'NA').strip()
