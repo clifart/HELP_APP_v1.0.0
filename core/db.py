@@ -42,7 +42,9 @@ def get_db_connection():
     """Devuelve una conexión sqlite3 con row_factory=Row."""
     conn = sqlite3.connect(str(DB_PATH), timeout=30, check_same_thread=False)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL;")
+    # DELETE es compatible con el almacenamiento de red de PythonAnywhere.
+    # Con un solo worker evita los errores de E/S que puede producir WAL.
+    conn.execute("PRAGMA journal_mode=DELETE;")
     conn.execute("PRAGMA busy_timeout=30000;")
     return conn
 
