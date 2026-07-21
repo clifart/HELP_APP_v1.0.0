@@ -510,6 +510,19 @@ def _asegurar_cols_historial(cur):
 # =========================
 # PANEL USUARIO — MIS TAREAS DE HOY
 # =========================
+@usuario_bp.route("/ayuda")
+def ayuda():
+    if not _solo_usuario():
+        flash("Acceso no autorizado.", "danger")
+        return redirect(url_for("login"))
+
+    paginas = [
+        f"manual/MANUAL_USUARIO_TRAZOP_v1.2.10_{numero}.svg"
+        for numero in range(1, 13)
+    ]
+    return render_template("usuario/ayuda.html", paginas=paginas)
+
+
 @usuario_bp.route("/")
 def panel():
     if not _solo_usuario():

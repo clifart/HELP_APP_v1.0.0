@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block content %}
+<main class="manual-shell">
+  <header class="manual-header">
+    <div>
+      <p class="manual-eyebrow">TRAZOP · VERSIÓN {{ config['APP_VERSION'] }}</p>
+      <h1>Manual de usuario</h1>
+      <p class="manual-subtitle">Consulta paso a paso cómo registrar y gestionar tus actividades.</p>
+    </div>
+    <a href="{{ url_for('usuario.panel') }}" class="manual-back" aria-label="Volver a Mis Tareas de Hoy">
+      <span aria-hidden="true">←</span> Volver a tareas
+    </a>
+  </header>
+
+  <nav class="manual-index" aria-label="Páginas del manual">
+    {% for pagina in paginas %}
+      <a href="#pagina-{{ loop.index }}" aria-label="Ir a la página {{ loop.index }}">{{ loop.index }}</a>
+    {% endfor %}
+  </nav>
+
+  <section class="manual-pages" aria-label="Contenido del manual">
+    {% for pagina in paginas %}
+      <figure class="manual-page" id="pagina-{{ loop.index }}">
+        <img
+          src="{{ url_for('static', filename=pagina, v='20260721-hires') }}"
+          alt="Manual de usuario TrazOp, página {{ loop.index }} de {{ paginas|length }}"
+          loading="{{ 'eager' if loop.first else 'lazy' }}"
+          decoding="async"
+        >
+        <figcaption>Página {{ loop.index }} de {{ paginas|length }}</figcaption>
+      </figure>
+    {% endfor %}
+  </section>
+
+  <a href="#" class="manual-top" aria-label="Volver al inicio del manual">↑</a>
+</main>
+
+<style>
+  html { scroll-behavior: smooth; }
+  body { background: #eef4f1; }
+  .manual-shell {
+    width: min(100% - 24px, 920px);
+    margin: 18px auto 42px;
+  }
+  .manual-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 22px;
+    padding: 20px 22px;
+    background: #fff;
+    border: 1px solid #dce8e3;
+    border-radius: 16px;
+    box-shadow: 0 5px 18px rgba(15, 106, 79, 0.09);
+  }
+  .manual-eyebrow {
+    margin: 0 0 3px;
+    color: #2e8b57;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+  }
+  .manual-header h1 {
+    margin: 0;
+    color: #0f6a4f;
+    font-size: clamp(24px, 5vw, 34px);
+    line-height: 1.1;
+  }
+  .manual-subtitle {
+    margin: 7px 0 0;
+    color: #66736e;
+    line-height: 1.45;
+  }
+  .manual-back {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 11px 15px;
+    border-radius: 9px;
+    background: #0f6a4f;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .manual-back:hover { background: #0a533d; color: #fff; }
+  .manual-index {
+    position: sticky;
+    top: 8px;
+    z-index: 20;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin: 12px 0;
+    padding: 9px;
+    overflow-x: auto;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #dce8e3;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(15, 106, 79, 0.08);
+    backdrop-filter: blur(7px);
+  }
+  .manual-index a {
+    flex: 0 0 34px;
+    display: grid;
+    place-items: center;
+    min-height: 34px;
+    border-radius: 8px;
+    background: #e8f4ef;
+    color: #0f6a4f;
+    text-decoration: none;
+    font-weight: 800;
+  }
+  .manual-index a:hover { background: #cfe8dd; }
+  .manual-pages { display: grid; gap: 18px; }
+  .manual-page {
+    scroll-margin-top: 72px;
+    margin: 0;
+    padding: 10px 10px 8px;
+    background: #fff;
+    border: 1px solid #dce8e3;
+    border-radius: 14px;
+    box-shadow: 0 6px 20px rgba(35, 65, 55, 0.1);
+  }
+  .manual-page img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+  .manual-page figcaption {
+    padding-top: 7px;
+    color: #66736e;
+    font-size: 13px;
+    text-align: center;
+  }
+  .manual-top {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #2e7d32;
+    color: #fff;
+    text-decoration: none;
+    font-size: 24px;
+    font-weight: 800;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  }
+  @media (max-width: 620px) {
+    .manual-shell { width: min(100% - 12px, 920px); margin-top: 6px; }
+    .manual-header { align-items: stretch; flex-direction: column; padding: 17px; }
+    .manual-back { justify-content: center; }
+    .manual-index { justify-content: flex-start; top: 4px; }
+    .manual-pages { gap: 10px; }
+    .manual-page { padding: 5px 5px 7px; border-radius: 10px; }
+  }
+</style>
+{% endblock %}

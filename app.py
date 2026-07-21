@@ -10,6 +10,9 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from core.db import ensure_schema  # solo esto desde core.db aquí
 
 
+APP_VERSION = "1.2.11"
+
+
 # Intentamos importar la carpeta diaria; si falla, no rompemos la app
 try:
     from core.registro_diario import get_carpeta_diaria  # carpeta diaria
@@ -85,6 +88,7 @@ def create_app():
     if os.environ.get("HELP_APP_HOSTING") == "pythonanywhere":
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     app.config["MASTER_KEY"] = os.environ.get("HELP_APP_MASTER_KEY", "HELPAPP_2025")
+    app.config["APP_VERSION"] = APP_VERSION
     app.config.setdefault("DEBUG_AVISO_SEG", 0)
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
