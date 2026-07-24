@@ -41,7 +41,6 @@ class TrazOpWebView extends StatefulWidget {
 
 class _TrazOpWebViewState extends State<TrazOpWebView> {
   late final WebViewController _controller;
-  final WebViewCookieManager _cookieManager = WebViewCookieManager();
   int _progress = 0;
   bool _startingBackend = true;
   bool _hasError = false;
@@ -112,13 +111,6 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
 
     for (var attempt = 0; attempt < 90; attempt++) {
       if (await _backendIsReady()) {
-        try {
-          await _cookieManager.clearCookies();
-          await _controller.clearCache();
-          await _controller.clearLocalStorage();
-        } catch (_) {
-          // La limpieza de sesión no debe impedir el arranque local.
-        }
         if (!mounted) return;
         setState(() => _startingBackend = false);
         await _loadUrl(kLocalServerUrl);
@@ -176,14 +168,6 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
     });
   }
 
-  Future<void> _handleSystemBack() async {
-    if (await _controller.canGoBack()) {
-      await _controller.goBack();
-    } else {
-      await SystemNavigator.pop();
-    }
-  }
-
   Future<void> _reload() async {
     if (!await _backendIsReady()) {
       await _startLocalApp();
@@ -226,9 +210,9 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _handleSystemBack();
-      },
+      // El botón/gesto Atrás de Android no cierra la app ni vuelve al login.
+      // La navegación se realiza únicamente con los controles de TrazOp.
+      onPopInvokedWithResult: (didPop, result) {},
       child: Scaffold(
         appBar: _showToolbar
             ? AppBar(
@@ -236,11 +220,6 @@ class _TrazOpWebViewState extends State<TrazOpWebView> {
                 foregroundColor: const Color(0xFF66686A),
                 surfaceTintColor: Colors.white,
                 actions: [
-                  IconButton(
-                    tooltip: 'Atrás',
-                    onPressed: _handleSystemBack,
-                    icon: const Icon(Icons.arrow_back),
-                  ),
                   IconButton(
                     tooltip: 'Recargar',
                     onPressed: _reload,

@@ -6,6 +6,7 @@ from core.horarios import (
     fin_ventana_actual,
     inferir_turno,
     iso_sin_segundos,
+    requiere_nuevo_tramo,
     segundos_laborales_transcurridos,
 )
 from core.autocierre_config import AUTO_CIERRE_GRACIA_SEG, AUTO_CIERRE_LIMITE_SEG
@@ -432,6 +433,27 @@ def _cantidad_flexo_guardada(cur, usuario: str, op_no: str, tarea_id: Optional[i
         return 0
 
 
+def _rebobinado_flexo_guardado(cur, usuario: str, op_no: str, tarea_id: Optional[int]) -> bool:
+    try:
+        fila = cur.execute("""
+            SELECT data_json
+              FROM checklist_modulos
+             WHERE usuario = ?
+               AND op_no = ?
+               AND modulo = 'flexo'
+               AND COALESCE(tarea_id, 0) = COALESCE(?, 0)
+             ORDER BY id DESC
+             LIMIT 1
+        """, (usuario, op_no, tarea_id)).fetchone()
+        if not fila:
+            return False
+        data_raw = fila[0] if isinstance(fila, tuple) else fila["data_json"]
+        data = json.loads(data_raw or "{}")
+        return str(data.get("flexo_rebobinado") or "").strip().upper() == "SI"
+    except Exception:
+        return False
+
+
 # -------------------------
 # PAUSA / REANUDAR (cronómetro sin contar pausas)
 # -------------------------
@@ -448,6 +470,16 @@ def _asegurar_cols_pausa(cur):
     if "pausa_acum" not in cols:
         try:
             cur.execute("ALTER TABLE tareas ADD COLUMN pausa_acum INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+    if "reinicio_pendiente" not in cols:
+        try:
+            cur.execute("ALTER TABLE tareas ADD COLUMN reinicio_pendiente INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+    if "trabajo_acum" not in cols:
+        try:
+            cur.execute("ALTER TABLE tareas ADD COLUMN trabajo_acum INTEGER DEFAULT 0")
         except sqlite3.OperationalError:
             pass
 
@@ -546,7 +578,8 @@ def panel():
             cantidad,
             estado,
             COALESCE(horario_extendido, 0) AS horario_extendido,
-            COALESCE(pausa_acum, 0) AS pausa_acum
+            COALESCE(pausa_acum, 0) AS pausa_acum,
+            COALESCE(trabajo_acum, 0) AS trabajo_acum
         FROM tareas
         WHERE estado != 'Finalizado'
           AND asignado_a = ?
@@ -567,6 +600,7 @@ def panel():
         estado = (t[7] if isinstance(t, tuple) else t["estado"]) or ""
         horario_extendido = (t[8] if isinstance(t, tuple) else t["horario_extendido"]) or 0
         pausa_acum_db = int((t[9] if isinstance(t, tuple) else t["pausa_acum"]) or 0)
+        trabajo_acum_db = int((t[10] if isinstance(t, tuple) else t["trabajo_acum"]) or 0)
 
         modulo = _modulo_por_proceso(tarea) or "general"
         omite_ctrl = _omite_checklist_y_cantidad(tarea)
@@ -574,9 +608,12 @@ def panel():
         cantidad_automatica = _es_flexo(tarea)
         ok_chk = True if omite_ctrl else _existe_checklist_modulo(cur, usuario, op.strip(), modulo, tarea_id=tid)
         if cantidad_automatica and ok_chk:
-            cantidad_calculada = _cantidad_flexo_guardada(cur, usuario, op.strip(), tid)
-            if cantidad_calculada > 0:
-                cantidad = cantidad_calculada
+            if _rebobinado_flexo_guardado(cur, usuario, op.strip(), tid):
+                cantidad_automatica = False
+            else:
+                cantidad_calculada = _cantidad_flexo_guardada(cur, usuario, op.strip(), tid)
+                if cantidad_calculada > 0:
+                    cantidad = cantidad_calculada
 
         # Cálculo de tiempo real para el frontend (transcurrir el tiempo)
         seg_trans_neto = 0
@@ -588,7 +625,7 @@ def panel():
                 trno = inferir_turno(dt_ini)
                 if estado == "En curso":
                     seg_trans_bruto = segundos_laborales_transcurridos(dt_ini, datetime.now(), trno)
-                    seg_trans_neto = max(0, seg_trans_bruto - pausa_acum_db)
+                    seg_trans_neto = trabajo_acum_db + max(0, seg_trans_bruto - pausa_acum_db)
                 fin_turno = fin_ventana_actual(dt_ini, trno)
                 if fin_turno:
                     fin_aut_hhmm = fin_turno.strftime("%H:%M")
@@ -808,7 +845,8 @@ def finalizar_tarea_usuario():
                   COALESCE(pausa_acum,0) AS pausa_acum,
                   COALESCE(horario_extendido,0) AS horario_extendido,
                   COALESCE(extendido_desde,'') AS extendido_desde,
-                  COALESCE(cantidad,0) AS cantidad
+                  COALESCE(cantidad,0) AS cantidad,
+                  COALESCE(trabajo_acum,0) AS trabajo_acum
            FROM tareas
            WHERE id=? AND asignado_a=?
            LIMIT 1""",
@@ -829,6 +867,7 @@ def finalizar_tarea_usuario():
     horario_extendido_db = int((fila_estado[7] if isinstance(fila_estado, tuple) else fila_estado["horario_extendido"]) or 0)
     extendido_desde_db = (fila_estado[8] if isinstance(fila_estado, tuple) else fila_estado["extendido_desde"]) or ""
     cantidad_db_actual = int((fila_estado[9] if isinstance(fila_estado, tuple) else fila_estado["cantidad"]) or 0)
+    trabajo_acum_db = int((fila_estado[10] if isinstance(fila_estado, tuple) else fila_estado["trabajo_acum"]) or 0)
 
     op_no = op_no or str(op_db).strip()
     descripcion = descripcion or str(desc_db).strip()
@@ -837,12 +876,19 @@ def finalizar_tarea_usuario():
     omite_cant = _omite_cantidad(tarea)
 
     if _es_flexo(tarea):
-        cantidad = _cantidad_flexo_guardada(cur, usuario, op_no, tarea_id) or cantidad_db_actual
-        if cantidad <= 0:
+        es_rebobinado = _rebobinado_flexo_guardado(cur, usuario, op_no, tarea_id)
+        if es_rebobinado:
+            if not cantidad_raw.isdigit() or int(cantidad_raw) <= 0:
+                conn.close()
+                return jsonify({"ok": False, "msg": "Debes ingresar una cantidad mayor que cero."}), 400
+            cantidad = int(cantidad_raw)
+        else:
+            cantidad = _cantidad_flexo_guardada(cur, usuario, op_no, tarea_id) or cantidad_db_actual
+        if not es_rebobinado and cantidad <= 0:
             conn.close()
             return jsonify({
                 "ok": False,
-                "msg": "El punto 4.6 del checklist Flexo debe generar una cantidad mayor que cero."
+                "msg": "El punto 4.7 del checklist Flexo debe generar una cantidad mayor que cero."
             }), 400
     elif omite_cant:
         cantidad = 0
@@ -883,6 +929,7 @@ def finalizar_tarea_usuario():
             pausa_acum_seg=pausa_acum_db,
             horario_extendido=horario_extendido_db,
             extendido_desde=extendido_desde_db,
+            trabajo_acum_seg=trabajo_acum_db,
         )
     except Exception as e:
         print("⚠️ No se pudo calcular tiempo_total:", e)
@@ -1128,7 +1175,8 @@ def autocerrar_tarea_usuario():
         """SELECT titulo, descripcion, proceso, estado, inicio, fin,
                   COALESCE(pausa_acum,0) AS pausa_acum, COALESCE(cantidad,0) AS cantidad,
                   COALESCE(horario_extendido,0) AS horario_extendido,
-                  COALESCE(extendido_desde,'') AS extendido_desde
+                  COALESCE(extendido_desde,'') AS extendido_desde,
+                  COALESCE(trabajo_acum,0) AS trabajo_acum
            FROM tareas
            WHERE id=? AND asignado_a=?
            LIMIT 1""",
@@ -1149,6 +1197,7 @@ def autocerrar_tarea_usuario():
     cantidad_db = int((fila_estado[7] if isinstance(fila_estado, tuple) else fila_estado["cantidad"]) or 0)
     horario_extendido_db = int((fila_estado[8] if isinstance(fila_estado, tuple) else fila_estado["horario_extendido"]) or 0)
     extendido_desde_db = (fila_estado[9] if isinstance(fila_estado, tuple) else fila_estado["extendido_desde"]) or ""
+    trabajo_acum_db = int((fila_estado[10] if isinstance(fila_estado, tuple) else fila_estado["trabajo_acum"]) or 0)
 
     if (est_db or "").strip() == "Finalizado":
         conn.close()
@@ -1171,7 +1220,7 @@ def autocerrar_tarea_usuario():
             dt_inicio=dt_inicio,
             dt_ahora=dt_ahora,
             turno=turno,
-            limite_seg=AUTO_CIERRE_LIMITE_SEG,
+            limite_seg=max(0, AUTO_CIERRE_LIMITE_SEG - trabajo_acum_db),
             pausa_acum_seg=pausa_acum_db,
         )
         if fin_efectivo:
@@ -1194,6 +1243,7 @@ def autocerrar_tarea_usuario():
             pausa_acum_seg=pausa_acum_db,
             horario_extendido=horario_extendido_db,
             extendido_desde=extendido_desde_db,
+            trabajo_acum_seg=trabajo_acum_db,
         )
     except Exception as e:
         print("⚠️ No se pudo calcular tiempo_total (autocierre):", e)
@@ -1380,7 +1430,9 @@ def reanudar_tarea_usuario():
 
     try:
         fila = cur.execute(
-            "SELECT estado, COALESCE(pausa_inicio,'') AS pausa_inicio, COALESCE(pausa_acum,0) AS pausa_acum "
+            "SELECT estado, COALESCE(pausa_inicio,'') AS pausa_inicio, COALESCE(pausa_acum,0) AS pausa_acum, "
+            "COALESCE(inicio,'') AS inicio, COALESCE(reinicio_pendiente,0) AS reinicio_pendiente, "
+            "COALESCE(trabajo_acum,0) AS trabajo_acum "
             "FROM tareas WHERE id=? AND asignado_a=? LIMIT 1",
             (tarea_id, usuario)
         ).fetchone()
@@ -1392,6 +1444,9 @@ def reanudar_tarea_usuario():
         estado = (fila[0] if isinstance(fila, tuple) else fila["estado"]) or ""
         pausa_inicio = (fila[1] if isinstance(fila, tuple) else fila["pausa_inicio"]) or ""
         pausa_acum = int((fila[2] if isinstance(fila, tuple) else fila["pausa_acum"]) or 0)
+        inicio_actual = (fila[3] if isinstance(fila, tuple) else fila["inicio"]) or ""
+        reinicio_pendiente = int((fila[4] if isinstance(fila, tuple) else fila["reinicio_pendiente"]) or 0)
+        trabajo_acum = int((fila[5] if isinstance(fila, tuple) else fila["trabajo_acum"]) or 0)
 
         if estado.strip() == "Finalizado":
             conn.close()
@@ -1401,24 +1456,77 @@ def reanudar_tarea_usuario():
             conn.close()
             return jsonify({"ok": False, "msg": "La tarea no está en PAUSA"}), 400
 
-        if pausa_inicio:
+        ahora_raw = now_iso()
+        dt_now = datetime.fromisoformat(ahora_raw.replace("Z", ""))
+        try:
+            dt_inicio = datetime.fromisoformat(inicio_actual.replace("Z", ""))
+        except Exception:
+            dt_inicio = None
+
+        nuevo_tramo = bool(reinicio_pendiente) or requiere_nuevo_tramo(dt_inicio, dt_now)
+
+        if nuevo_tramo:
+            if dt_inicio:
+                try:
+                    dt_fin_tramo = datetime.fromisoformat(pausa_inicio.replace("Z", "")) if pausa_inicio else dt_now
+                    bruto_tramo = max(0, int((dt_fin_tramo - dt_inicio).total_seconds()))
+                    trabajo_acum += max(0, bruto_tramo - int(pausa_acum or 0))
+                except Exception as e:
+                    print("No se pudo acumular el tramo anterior:", e)
+            nuevo_inicio = iso_sin_segundos(ahora_raw)
+            nuevo_turno = inferir_turno(dt_now)
+            nuevo_fin_turno = fin_ventana_actual(dt_now, nuevo_turno)
+            cur.execute("""
+                UPDATE tareas
+                   SET estado='En curso',
+                       inicio=?,
+                       fin=NULL,
+                       pausa_inicio=NULL,
+                       pausa_acum=0,
+                       reinicio_pendiente=0,
+                       trabajo_acum=?,
+                       horario_extendido=0,
+                       extendido_desde=NULL
+                 WHERE id=? AND asignado_a=?
+            """, (nuevo_inicio, int(trabajo_acum), tarea_id, usuario))
+            pausa_acum = 0
+        elif pausa_inicio:
             try:
                 dt_pi = datetime.fromisoformat(pausa_inicio.replace("Z", ""))
-                dt_now = datetime.fromisoformat(now_iso().replace("Z", ""))
                 seg = int((dt_now - dt_pi).total_seconds())
                 seg = max(0, seg)
                 pausa_acum = int(pausa_acum) + seg
             except Exception as e:
                 print("⚠️ No se pudo acumular pausa:", e)
 
-        cur.execute(
-            "UPDATE tareas SET estado='En curso', pausa_inicio=NULL, pausa_acum=? WHERE id=? AND asignado_a=?",
-            (int(pausa_acum), tarea_id, usuario)
-        )
+        if not nuevo_tramo:
+            nuevo_inicio = iso_sin_segundos(inicio_actual)
+            nuevo_fin_turno = fin_ventana_actual(dt_inicio, inferir_turno(dt_inicio)) if dt_inicio else None
+            cur.execute(
+                "UPDATE tareas SET estado='En curso', pausa_inicio=NULL, pausa_acum=?, reinicio_pendiente=0 "
+                "WHERE id=? AND asignado_a=?",
+                (int(pausa_acum), tarea_id, usuario)
+            )
+
+        if nuevo_tramo:
+            segundos_trabajados = int(trabajo_acum)
+        elif dt_inicio:
+            bruto_actual = max(0, int((dt_now - dt_inicio).total_seconds()))
+            segundos_trabajados = int(trabajo_acum) + max(0, bruto_actual - int(pausa_acum))
+        else:
+            segundos_trabajados = int(trabajo_acum)
 
         conn.commit()
         conn.close()
-        return jsonify({"ok": True, "estado": "En curso", "pausa_acum": int(pausa_acum)}), 200
+        return jsonify({
+            "ok": True,
+            "estado": "En curso",
+            "pausa_acum": int(pausa_acum),
+            "nuevo_tramo": bool(nuevo_tramo),
+            "inicio": nuevo_inicio,
+            "fin_aut_hhmm": nuevo_fin_turno.strftime("%H:%M") if nuevo_fin_turno else "",
+            "segundos_trabajados": segundos_trabajados,
+        }), 200
 
     except Exception as e:
         conn.rollback()
@@ -1620,10 +1728,11 @@ def checklist_impresion():
             return redirect(request.url)
         cantidad_flexo = None
         if modulo == "flexo":
+            es_rebobinado = (request.form.get("flexo_rebobinado") or "").strip().upper() == "SI"
             cantidad_flexo = _cantidad_etiquetas_flexo(request.form.get("flexo_etiquetas_por_rollo"))
-            if cantidad_flexo <= 0:
+            if not es_rebobinado and cantidad_flexo <= 0:
                 conn.close()
-                flash("⚠️ El punto 4.6 debe generar una cantidad de etiquetas mayor que cero.", "warning")
+                flash("⚠️ El punto 4.7 debe generar una cantidad de etiquetas mayor que cero.", "warning")
                 return redirect(request.url)
         fecha = now_iso()
 
@@ -1636,7 +1745,7 @@ def checklist_impresion():
             VALUES (?, ?, ?, ?, ?, ?)
         """, (usuario, op_no, modulo, tarea_id_int, fecha, json.dumps(data_dict, ensure_ascii=False)))
 
-        if modulo == "flexo" and tarea_id_int is not None:
+        if modulo == "flexo" and not es_rebobinado and tarea_id_int is not None:
             cur.execute("""
                 UPDATE tareas
                    SET cantidad = ?

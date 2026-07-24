@@ -210,6 +210,8 @@ def ensure_schema():
         _ensure_column(conn, "tareas", "cantidad", "INTEGER DEFAULT 0")
         _ensure_column(conn, "tareas", "horario_extendido", "INTEGER DEFAULT 0")
         _ensure_column(conn, "tareas", "extendido_desde", "TEXT")
+        _ensure_column(conn, "tareas", "reinicio_pendiente", "INTEGER DEFAULT 0")
+        _ensure_column(conn, "tareas", "trabajo_acum", "INTEGER DEFAULT 0")
 
         # Compatibilidad: tu archivo mezcla usuario_asignado y asignado_a
         _ensure_column(conn, "tareas", "asignado_a", "TEXT")
@@ -235,6 +237,8 @@ def ensure_tareas_columns(conn=None):
         _ensure_column(c, "tareas", "cantidad", "INTEGER DEFAULT 0")
         _ensure_column(c, "tareas", "horario_extendido", "INTEGER DEFAULT 0")
         _ensure_column(c, "tareas", "extendido_desde", "TEXT")
+        _ensure_column(c, "tareas", "reinicio_pendiente", "INTEGER DEFAULT 0")
+        _ensure_column(c, "tareas", "trabajo_acum", "INTEGER DEFAULT 0")
 
         # Compatibilidad (por si el resto del código usa uno u otro)
         _ensure_column(c, "tareas", "asignado_a", "TEXT")

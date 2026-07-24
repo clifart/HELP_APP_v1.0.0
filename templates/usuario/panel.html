@@ -13,6 +13,9 @@
         <a href="{{ url_for('usuario.historial_usuario') }}" class="menu-sandwich-item">🕒 Historial</a>
         <a href="{{ url_for('usuario.calculadora_corte') }}" class="menu-sandwich-item">✂️ Calc. de Corte</a>
         <a href="{{ url_for('usuario.ayuda') }}" class="menu-sandwich-item">❓ Ayuda</a>
+        <form action="{{ url_for('logout') }}" method="POST" class="menu-logout-form">
+          <button type="submit" class="menu-sandwich-item menu-sandwich-logout">🚪 Cerrar sesión</button>
+        </form>
       </nav>
     </div>
 
@@ -110,7 +113,7 @@
 
                 {% set ini_hhmm = ini_s %}
                 {% if ini_s and (ini_s|length) >= 16 and (ini_s[4] == '-') and (ini_s[7] == '-') and (ini_s[10] == ' ') %}
-                {% set ini_hhmm = ini_s[11:16] %}
+                {% set ini_hhmm = ini_s[8:10] ~ '/' ~ ini_s[5:7] ~ ' ' ~ ini_s[11:16] %}
                 {% elif ini_s and (ini_s|length) >= 5 and (ini_s[2] == ':') %}
                 {% set ini_hhmm = ini_s[0:5] %}
                 {% endif %}
@@ -157,7 +160,7 @@
                         {% if t.get('omite_cantidad') %}
                         <span class="sin-cantidad">N/A</span>
                         {% else %}
-                        <input type="number" min="0" class="cantidad-input" value="{{ t.get('cantidad') or 0 }}"{% if t.get('cantidad_automatica') %} title="Calculada por el punto 4.6 del checklist Flexo" readonly{% endif %} disabled>
+                        <input type="number" min="0" class="cantidad-input" value="{{ t.get('cantidad') or 0 }}"{% if t.get('cantidad_automatica') %} title="Calculada por el punto 4.7 del checklist Flexo" readonly{% endif %} disabled>
                         {% endif %}
                     </td>
                     <td class="acciones-tarea-celda">
@@ -197,8 +200,6 @@
             </tbody>
         </table>
     </div>
-
-    <a href="{{ url_for('login') }}" class="btn-cerrar">Cerrar Sesión</a>
 
     <div id="alertaCustom" class="alerta-oculta">
         ⚠️ <span id="mensajeCustom"></span>
@@ -303,6 +304,18 @@
     }
     .menu-sandwich-item:last-child { border-bottom: none; }
     .menu-sandwich-item:hover { background: #e9f5ee; color: #056c4e; }
+    .menu-logout-form { margin: 0; }
+    .menu-sandwich-logout {
+        width: 100%;
+        border: 0;
+        border-radius: 0;
+        background: #fff;
+        color: #a12b2b;
+        font-family: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+    .menu-sandwich-logout:hover { background: #fff0f0; color: #7d1e1e; }
 
     .alerta-oculta {
         position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
@@ -362,7 +375,6 @@
         vertical-align: middle; white-space: nowrap;
     }
     .btn-agregar { background-color: #0f6a4f; color: white; border: none; border-radius: 6px; padding: 6px 12px; margin-left: 8px; }
-    .btn-cerrar { margin-top: 20px; background-color: #6c757d; color: white; border: none; border-radius: 6px; padding: 6px 12px; display: inline-block; text-decoration: none; }
     .btn-checklist { background-color: #0d6efd; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; margin-left: 6px; text-decoration: none; display: inline-block; }
     .btn-checklist:hover { opacity: 0.9; color: #fff; }
     .btn-pausa { background: #6c757d; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; margin-left: 6px; cursor: pointer; }
@@ -417,7 +429,6 @@
         #tablaTareas th, #tablaTareas td { padding: 4px; font-size: 0.75rem; white-space: nowrap; }
         .acciones-tarea { flex-direction: column; align-items: stretch; gap: 4px; }
         .btn-finalizar, .btn-sin-checklist, .btn-checklist, .btn-pausa, .btn-reanudar { display: block; width: 100%; margin: 2px 0; text-align: center; }
-        .btn-cerrar { width: 100%; text-align: center; }
     }
 </style>
 
@@ -561,6 +572,14 @@
     function _fmtHora(d) {
         if (!d) return "--:--:--";
         return [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2,'0')).join(':');
+    }
+
+    function _fmtFechaHoraCorta(raw) {
+        const d = _parseFechaHora(raw);
+        if (!d) return raw || "-";
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        return `${dd}/${mm} ${_fmtHora(d).slice(0, 5)}`;
     }
 
     function _encolarAviso(fila) {
@@ -1011,6 +1030,14 @@
             const data = await resp.json();
             if (!resp.ok || !data.ok) { mostrarAlerta(data.msg || "⚠️ No se pudo reanudar."); return; }
             fila.setAttribute("data-estado", "En curso");
+            if (data.inicio) {
+                fila.dataset.inicio = data.inicio;
+                fila.dataset.segTranscurridos = String(data.segundos_trabajados || 0);
+                if (fila.cells[4]) fila.cells[4].textContent = _fmtFechaHoraCorta(data.inicio);
+            }
+            if (data.fin_aut_hhmm && fila.cells[5]) {
+                fila.cells[5].innerHTML = `<span class="fin-aut-display"><span>FIN AUT</span><strong>${data.fin_aut_hhmm}</strong></span>`;
+            }
             _programarAvisoFila(fila);
             const ci = fila.querySelector('.cantidad-input'); const bf = fila.querySelector('.btn-finalizar');
             const omiteControles = (fila.dataset.omiteControles || "0").trim() === "1";

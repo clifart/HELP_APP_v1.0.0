@@ -140,6 +140,11 @@
             font-weight:700;
         }
 
+        tr.flexo-dato-deshabilitado td{
+            background:#eeeeee;
+            color:#888;
+        }
+
         .checklist-table td.col-opt{
             position:relative;
             overflow:hidden !important;
@@ -216,6 +221,12 @@
         const hEtq = document.getElementById('flexo-h-etq');
         const hRollos = document.getElementById('flexo-h-rollos');
         const hTotal = document.getElementById('flexo-total-mts');
+        const rebobinadoOpciones = form
+          ? form.querySelectorAll('input[name="flexo_rebobinado"]')
+          : [];
+        const filasDatosRollo = form
+          ? form.querySelectorAll('[data-flexo-dato-rollo]')
+          : [];
 
         function num(v) {
           const n = parseFloat(v);
@@ -251,11 +262,33 @@
           if (hRollos) hRollos.value = String(rollos);
         }
 
+        function actualizarDatosRollo() {
+          const rebobinadoSi = form
+            ? form.querySelector('input[name="flexo_rebobinado"][value="SI"]')
+            : null;
+          const deshabilitar = Boolean(rebobinadoSi && rebobinadoSi.checked);
+
+          filasDatosRollo.forEach(fila => {
+            fila.classList.toggle('flexo-dato-deshabilitado', deshabilitar);
+            fila.querySelectorAll('input').forEach(campo => {
+              campo.disabled = deshabilitar;
+            });
+          });
+
+          if (inMts) inMts.required = !deshabilitar;
+          if (inEtq) inEtq.required = !deshabilitar;
+        }
+
         [inMts, inEtq, inPesoEtq, inTara].forEach(inp => {
           if (inp) inp.addEventListener('input', calcular);
         });
 
+        rebobinadoOpciones.forEach(opcion => {
+          opcion.addEventListener('change', actualizarDatosRollo);
+        });
+
         calcular();
+        actualizarDatosRollo();
       });
     </script>
 

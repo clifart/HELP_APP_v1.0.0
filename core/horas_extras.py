@@ -25,11 +25,13 @@ def calcular_tiempo_total_y_horas_extras(
     pausa_acum_seg=0,
     horario_extendido=0,
     extendido_desde=None,
+    trabajo_acum_seg=0,
 ):
     """
     Devuelve (tiempo_total_hms, horas_extras_hms) en formato HH:MM:SS.
 
     - tiempo_total: duracion neta (fin - inicio - pausas).
+      Incluye trabajo_acum_seg de tramos anteriores de la misma tarea.
     - horas_extras: tramo neto desde extendido_desde hasta fin, solo si horario_extendido=1.
     """
     dt_inicio = _parse_iso(inicio)
@@ -39,7 +41,8 @@ def calcular_tiempo_total_y_horas_extras(
 
     bruto_total = max(0, int((dt_fin - dt_inicio).total_seconds()))
     pausa_total = max(0, int(pausa_acum_seg or 0))
-    neto_total = max(0, bruto_total - pausa_total)
+    acumulado_anterior = max(0, int(trabajo_acum_seg or 0))
+    neto_total = acumulado_anterior + max(0, bruto_total - pausa_total)
 
     extras_seg = 0
     if int(horario_extendido or 0) == 1:

@@ -90,6 +90,22 @@
         if (tareaQS) sessionStorage.setItem('tareaChecklist', tareaQS);
 
         if (form) {
+          const alto = form.querySelector('input[name="plas_alto"]');
+          const ancho = form.querySelector('input[name="plas_ancho"]');
+          const medidaNoAplica = form.querySelector('input[name="plas_peso"][value="NA"]');
+
+          function actualizarRequeridosMedidas() {
+            const medidasRequeridas = !(medidaNoAplica && medidaNoAplica.checked);
+            [alto, ancho].forEach(campo => {
+              if (campo) campo.required = medidasRequeridas;
+            });
+          }
+
+          if (medidaNoAplica) {
+            medidaNoAplica.addEventListener('change', actualizarRequeridosMedidas);
+          }
+          actualizarRequeridosMedidas();
+
           form.addEventListener('submit', function () {
             const op2 = document.querySelector('input[name="op_no"]');
             if (op2 && op2.value) sessionStorage.setItem('opChecklist', op2.value);

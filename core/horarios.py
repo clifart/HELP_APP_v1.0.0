@@ -84,6 +84,15 @@ def fin_ventana_actual(dt: datetime, turno: str):
         return datetime.combine(dt.date(), time(14, 0))
     return datetime.combine(dt.date(), time(22, 0))
 
+
+def requiere_nuevo_tramo(dt_inicio: datetime, dt_ahora: datetime, turno: str = None) -> bool:
+    """Indica si el turno en el que inicio el tramo ya termino."""
+    if not dt_inicio or not dt_ahora or dt_ahora < dt_inicio:
+        return False
+    turno = turno or inferir_turno(dt_inicio)
+    fin_turno = fin_ventana_actual(dt_inicio, turno)
+    return bool(fin_turno and dt_ahora >= fin_turno)
+
 def truncar_a_minuto(dt: datetime):
     """Devuelve el mismo datetime sin segundos ni microsegundos."""
     if not dt:

@@ -194,7 +194,9 @@
         <div class="ha-btnbox__header">SESION / TECNICO</div>
         <div class="ha-btnbox__body">
 
-          <a href="{{ url_for('login') }}" class="btn btn-rojo">Cerrar Sesion</a>
+          <form action="{{ url_for('logout') }}" method="POST">
+            <button type="submit" class="btn btn-rojo">Cerrar Sesion</button>
+          </form>
 
           <form action="{{ url_for('admin.modo_tecnico') }}" method="POST" autocomplete="off" novalidate>
             <input type="text" name="fakeuser" style="display:none">

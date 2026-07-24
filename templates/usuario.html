@@ -103,7 +103,9 @@
 
   <!-- 🔒 CERRAR SESIÓN -->
   <div style="text-align: right; margin-top: 20px;">
-    <a href="{{ url_for('login') }}" class="btn btn-rojo">Cerrar Sesión</a>
+    <form action="{{ url_for('logout') }}" method="POST">
+      <button type="submit" class="btn btn-rojo">Cerrar Sesión</button>
+    </form>
   </div>
 
 </div>

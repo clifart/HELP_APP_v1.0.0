@@ -6,6 +6,8 @@ venv/
 .vscode/
 obj/
 *.db
+*.db-wal
+*.db-shm
 *.apk
 *.jks
 *.keystore
@@ -18,7 +20,9 @@ backups/
 help_app_apk/.dart_tool/
 help_app_apk/build/
 help_app_apk/build_failed_*/
+help_app_apk/build_stale_*/
 help_app_apk/android/.gradle/
+help_app_apk/android/.kotlin/
 help_app_apk/ios/
 help_app_apk/linux/
 help_app_apk/macos/

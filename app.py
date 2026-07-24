@@ -4,13 +4,14 @@ import socket
 import threading
 import webbrowser
 import time
+from datetime import timedelta
 
 from flask import Flask, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 from core.db import ensure_schema  # solo esto desde core.db aquí
 
 
-APP_VERSION = "1.2.11"
+APP_VERSION = "1.2.12"
 
 
 # Intentamos importar la carpeta diaria; si falla, no rompemos la app
@@ -92,6 +93,10 @@ def create_app():
     app.config.setdefault("DEBUG_AVISO_SEG", 0)
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(
+        days=int(os.environ.get("HELP_APP_SESSION_DAYS", "3650"))
+    )
+    app.config["SESSION_REFRESH_EACH_REQUEST"] = True
     app.config["SESSION_COOKIE_SECURE"] = os.environ.get(
         "HELP_APP_HTTPS",
         "1" if os.environ.get("HELP_APP_HOSTING") == "pythonanywhere" else "0",
@@ -148,6 +153,16 @@ def create_app():
                     autocierre_lock.release()
         return None
 
+    @app.after_request
+    def _evitar_paginas_privadas_en_cache(response):
+        # Obliga al navegador/WebView a consultar de nuevo la sesión al usar
+        # Atrás, evitando que muestre el login o una pantalla privada antigua.
+        if request.endpoint != "static":
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
     # =========================
     # BLUEPRINTS
     # =========================
@@ -177,6 +192,13 @@ def create_app():
         from flask import render_template, request, redirect, url_for, session, flash
         from core.db import get_db_connection
         from werkzeug.security import check_password_hash
+
+        if request.method == "GET":
+            rol_actual = (session.get("rol") or "").strip().lower()
+            if rol_actual == "admin":
+                return redirect(url_for("admin.panel"))
+            if rol_actual == "usuario":
+                return redirect(url_for("usuario.panel"))
 
         if request.method == "POST":
             nombre = (request.form.get("nombre") or "").strip()
@@ -220,7 +242,10 @@ def create_app():
                 flash("Usuario o contraseña incorrectos", "danger")
                 return redirect(url_for("login"))
 
-            # ✅ Login correcto
+            # Login correcto: la sesión permanece hasta que el usuario pulse
+            # explícitamente "Cerrar sesión".
+            session.clear()
+            session.permanent = True
             session["usuario"] = user["nombre"]
             session["usuario_id"] = user["id"]  # ✅ clave para el flujo de cambio
 
@@ -247,6 +272,13 @@ def create_app():
         usuarios = conn.execute("SELECT nombre, rol FROM usuarios").fetchall()
         conn.close()
         return render_template("login.html", usuarios=usuarios)
+
+    @app.route("/logout", methods=["POST"])
+    def logout():
+        from flask import redirect, url_for, session
+
+        session.clear()
+        return redirect(url_for("login"))
 
     @app.route("/configurar_admin_inicial", methods=["GET", "POST"])
     def configurar_admin_inicial():
@@ -535,6 +567,7 @@ def create_app():
             session.pop("primer_ingreso_id", None)
             session.pop("primer_ingreso_nombre", None)
 
+            session.permanent = True
             session["usuario"] = user["nombre"]
             rol_raw = user["rol"] or ""
             session["rol"] = (

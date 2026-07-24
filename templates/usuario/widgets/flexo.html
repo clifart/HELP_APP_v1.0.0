@@ -75,51 +75,59 @@
 
                     <tr>
                         <td class="col-num">4.1</td>
+                        <td class="col-desc">Rebobinado</td>
+                        <td class="col-opt"><input type="radio" name="flexo_rebobinado" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="flexo_rebobinado" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="flexo_rebobinado" value="NA"></td>
+                    </tr>
+
+                    <tr data-flexo-dato-rollo>
+                        <td class="col-num">4.2</td>
                         <td class="col-desc">Contenido rollo (mts)</td>
                         <td class="col-opt" colspan="3">
                             <input id="flexo-mts" type="number" step="0.01" min="0.01" name="flexo_contenido_rollo_mts" class="mini-input wide-input" required>
                         </td>
                     </tr>
-                    <tr>
-                        <td class="col-num">4.2</td>
+                    <tr data-flexo-dato-rollo>
+                        <td class="col-num">4.3</td>
                         <td class="col-desc">Cantidad de etiquetas por metro</td>
                         <td class="col-opt" colspan="3">
                             <input id="flexo-etq" type="number" step="0.01" min="0.01" name="flexo_etiquetas_por_metro" class="mini-input wide-input" required>
                         </td>
                     </tr>
-                    <tr>
-                        <td class="col-num">4.3</td>
+                    <tr data-flexo-dato-rollo>
+                        <td class="col-num">4.4</td>
                         <td class="col-desc">Peso de esa cantidad de etiquetas por metro</td>
                         <td class="col-opt" colspan="3">
                             <input id="flexo-peso-etq" type="number" step="0.001" min="0" name="flexo_peso_etiquetas_metro" class="mini-input wide-input">
                         </td>
                     </tr>
-                    <tr>
-                        <td class="col-num">4.4</td>
+                    <tr data-flexo-dato-rollo>
+                        <td class="col-num">4.5</td>
                         <td class="col-desc">Peso de tara</td>
                         <td class="col-opt" colspan="3">
                             <input id="flexo-tara" type="number" step="0.001" min="0" name="flexo_peso_tara" class="mini-input wide-input">
                         </td>
                     </tr>
 
-                    <tr>
-                        <td class="col-num">4.5</td>
+                    <tr data-flexo-dato-rollo>
+                        <td class="col-num">4.6</td>
                         <td class="col-desc">Peso de cada rollo terminado</td>
                         <td class="col-opt" colspan="3">
                             <span id="flexo-out-peso" class="calc-output">0</span>
                             <input type="hidden" name="flexo_peso_rollo_terminado" id="flexo-h-peso" value="0">
                         </td>
                     </tr>
-                    <tr>
-                        <td class="col-num">4.6</td>
+                    <tr data-flexo-dato-rollo>
+                        <td class="col-num">4.7</td>
                         <td class="col-desc">Cantidad de etiquetas por rollo terminado</td>
                         <td class="col-opt" colspan="3">
                             <span id="flexo-out-etq" class="calc-output">0</span>
                             <input type="hidden" name="flexo_etiquetas_por_rollo" id="flexo-h-etq" value="0">
                         </td>
                     </tr>
-                    <tr>
-                        <td class="col-num">4.7</td>
+                    <tr data-flexo-dato-rollo>
+                        <td class="col-num">4.8</td>
                         <td class="col-desc">Cantidad de rollos generados</td>
                         <td class="col-opt" colspan="3">
                             <span id="flexo-out-rollos" class="calc-output">0</span>

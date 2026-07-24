@@ -12,47 +12,71 @@
     </a>
   </header>
 
-  <nav class="manual-index" aria-label="Páginas del manual">
-    {% for pagina in paginas %}
-      <a href="#pagina-{{ loop.index }}" aria-label="Ir a la página {{ loop.index }}">{{ loop.index }}</a>
-    {% endfor %}
-  </nav>
+  <section class="manual-viewer" aria-label="Visor del manual de usuario">
+    <div class="manual-toolbar" role="toolbar" aria-label="Controles del manual">
+      <div class="manual-navigation">
+        <button type="button" id="manualPrev" class="viewer-button" aria-label="Página anterior">
+          <span aria-hidden="true">‹</span><span class="button-label">Anterior</span>
+        </button>
 
-  <section class="manual-pages" aria-label="Contenido del manual">
-    {% for pagina in paginas %}
-      <figure class="manual-page" id="pagina-{{ loop.index }}">
-        <img
-          src="{{ url_for('static', filename=pagina, v='20260721-hires') }}"
-          alt="Manual de usuario TrazOp, página {{ loop.index }} de {{ paginas|length }}"
-          loading="{{ 'eager' if loop.first else 'lazy' }}"
-          decoding="async"
+        <p class="manual-counter" aria-live="polite">
+          Página <strong id="manualCurrent">1</strong> de {{ paginas|length }}
+        </p>
+
+        <button type="button" id="manualNext" class="viewer-button" aria-label="Página siguiente">
+          <span class="button-label">Siguiente</span><span aria-hidden="true">›</span>
+        </button>
+      </div>
+
+      <div class="manual-zoom" aria-label="Controles de ampliación">
+        <button type="button" id="manualZoomOut" class="zoom-button" aria-label="Alejar">−</button>
+        <span id="manualZoomValue" class="zoom-value">100%</span>
+        <button type="button" id="manualZoomIn" class="zoom-button" aria-label="Acercar">+</button>
+        <button type="button" id="manualFit" class="fit-button">Ajustar</button>
+      </div>
+    </div>
+
+    <div class="manual-stage" id="manualStage" tabindex="0" aria-label="Página actual del manual">
+      {% for pagina in paginas %}
+        <figure
+          class="manual-page"
+          id="pagina-{{ loop.index }}"
+          data-manual-page="{{ loop.index }}"
+          {% if not loop.first %}hidden{% endif %}
         >
-        <figcaption>Página {{ loop.index }} de {{ paginas|length }}</figcaption>
-      </figure>
-    {% endfor %}
+          <img
+            src="{{ url_for('static', filename=pagina, v='20260721-hires') }}"
+            alt="Manual de usuario TrazOp, página {{ loop.index }} de {{ paginas|length }}"
+            loading="{{ 'eager' if loop.first else 'lazy' }}"
+            decoding="async"
+          >
+        </figure>
+      {% endfor %}
+    </div>
   </section>
 
-  <a href="#" class="manual-top" aria-label="Volver al inicio del manual">↑</a>
+  <p class="manual-hint">También puedes cambiar de página con las flechas del teclado.</p>
 </main>
 
 <style>
-  html { scroll-behavior: smooth; }
   body { background: #eef4f1; }
+
   .manual-shell {
-    width: min(100% - 24px, 920px);
-    margin: 18px auto 42px;
+    width: min(100% - 24px, 980px);
+    margin: 18px auto 38px;
   }
+
   .manual-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 22px;
-    padding: 20px 22px;
+    padding: 18px 22px;
     background: #fff;
     border: 1px solid #dce8e3;
-    border-radius: 16px;
-    box-shadow: 0 5px 18px rgba(15, 106, 79, 0.09);
+    border-radius: 16px 16px 0 0;
   }
+
   .manual-eyebrow {
     margin: 0 0 3px;
     color: #2e8b57;
@@ -60,103 +84,247 @@
     font-weight: 800;
     letter-spacing: 0.12em;
   }
+
   .manual-header h1 {
     margin: 0;
     color: #0f6a4f;
-    font-size: clamp(24px, 5vw, 34px);
+    font-size: clamp(24px, 5vw, 32px);
     line-height: 1.1;
   }
+
   .manual-subtitle {
-    margin: 7px 0 0;
+    margin: 6px 0 0;
     color: #66736e;
-    line-height: 1.45;
+    line-height: 1.4;
   }
+
   .manual-back {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    padding: 11px 15px;
+    padding: 10px 14px;
     border-radius: 9px;
     background: #0f6a4f;
     color: #fff;
     text-decoration: none;
     font-weight: 700;
   }
+
   .manual-back:hover { background: #0a533d; color: #fff; }
-  .manual-index {
-    position: sticky;
-    top: 8px;
-    z-index: 20;
+
+  .manual-viewer {
+    overflow: hidden;
+    background: #3e4844;
+    border: 1px solid #cfdcd6;
+    border-top: 0;
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 8px 24px rgba(35, 65, 55, 0.18);
+  }
+
+  .manual-toolbar {
+    position: relative;
+    z-index: 5;
     display: flex;
-    justify-content: center;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 58px;
+    padding: 9px 12px;
+    background: #25312d;
+    color: #fff;
+    border-bottom: 1px solid #59645f;
+  }
+
+  .manual-navigation,
+  .manual-zoom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .viewer-button,
+  .zoom-button,
+  .fit-button {
+    min-height: 38px;
+    border: 1px solid #66736e;
+    border-radius: 7px;
+    background: #394640;
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+  }
+
+  .viewer-button {
+    display: inline-flex;
+    align-items: center;
     gap: 6px;
-    margin: 12px 0;
-    padding: 9px;
-    overflow-x: auto;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid #dce8e3;
-    border-radius: 12px;
-    box-shadow: 0 3px 12px rgba(15, 106, 79, 0.08);
-    backdrop-filter: blur(7px);
+    padding: 7px 11px;
   }
-  .manual-index a {
-    flex: 0 0 34px;
-    display: grid;
-    place-items: center;
-    min-height: 34px;
-    border-radius: 8px;
-    background: #e8f4ef;
-    color: #0f6a4f;
-    text-decoration: none;
-    font-weight: 800;
+
+  .viewer-button span[aria-hidden="true"] {
+    font-size: 23px;
+    line-height: 0.8;
   }
-  .manual-index a:hover { background: #cfe8dd; }
-  .manual-pages { display: grid; gap: 18px; }
-  .manual-page {
-    scroll-margin-top: 72px;
+
+  .zoom-button {
+    width: 38px;
+    padding: 0;
+    font-size: 20px;
+  }
+
+  .fit-button { padding: 7px 11px; }
+
+  .viewer-button:hover,
+  .zoom-button:hover,
+  .fit-button:hover {
+    background: #0f6a4f;
+    border-color: #5bb98b;
+  }
+
+  .viewer-button:disabled,
+  .zoom-button:disabled {
+    opacity: 0.38;
+    cursor: default;
+    background: #394640;
+  }
+
+  .manual-counter {
+    min-width: 112px;
     margin: 0;
-    padding: 10px 10px 8px;
-    background: #fff;
-    border: 1px solid #dce8e3;
-    border-radius: 14px;
-    box-shadow: 0 6px 20px rgba(35, 65, 55, 0.1);
+    text-align: center;
+    white-space: nowrap;
   }
+
+  .zoom-value {
+    min-width: 48px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .manual-stage {
+    height: min(76vh, 900px);
+    min-height: 480px;
+    padding: 24px;
+    overflow: auto;
+    background: #56615c;
+    outline: none;
+    overscroll-behavior: contain;
+  }
+
+  .manual-stage:focus-visible {
+    box-shadow: inset 0 0 0 3px #65c592;
+  }
+
+  .manual-page {
+    width: min(100%, 820px);
+    margin: 0 auto;
+    background: #fff;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.38);
+  }
+
+  .manual-page[hidden] { display: none; }
+
   .manual-page img {
     display: block;
-    width: 100%;
+    width: var(--manual-zoom, 100%);
+    max-width: none;
     height: auto;
-    border-radius: 8px;
+    background: #fff;
   }
-  .manual-page figcaption {
-    padding-top: 7px;
+
+  .manual-hint {
+    margin: 10px 0 0;
     color: #66736e;
     font-size: 13px;
     text-align: center;
   }
-  .manual-top {
-    position: fixed;
-    right: 18px;
-    bottom: 18px;
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: #2e7d32;
-    color: #fff;
-    text-decoration: none;
-    font-size: 24px;
-    font-weight: 800;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
-  }
-  @media (max-width: 620px) {
-    .manual-shell { width: min(100% - 12px, 920px); margin-top: 6px; }
-    .manual-header { align-items: stretch; flex-direction: column; padding: 17px; }
+
+  @media (max-width: 700px) {
+    .manual-shell { width: min(100% - 10px, 980px); margin-top: 5px; }
+    .manual-header { align-items: stretch; flex-direction: column; padding: 15px; }
     .manual-back { justify-content: center; }
-    .manual-index { justify-content: flex-start; top: 4px; }
-    .manual-pages { gap: 10px; }
-    .manual-page { padding: 5px 5px 7px; border-radius: 10px; }
+    .manual-toolbar { align-items: stretch; flex-direction: column; }
+    .manual-navigation, .manual-zoom { justify-content: center; }
+    .manual-stage { height: 68vh; min-height: 390px; padding: 10px; }
+    .manual-page { width: 100%; }
+    .manual-hint { display: none; }
+  }
+
+  @media (max-width: 420px) {
+    .button-label { display: none; }
+    .viewer-button { min-width: 42px; justify-content: center; }
+    .manual-counter { min-width: 108px; }
+    .manual-zoom { gap: 6px; }
   }
 </style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const pages = Array.from(document.querySelectorAll('[data-manual-page]'));
+    const stage = document.getElementById('manualStage');
+    const currentLabel = document.getElementById('manualCurrent');
+    const prevButton = document.getElementById('manualPrev');
+    const nextButton = document.getElementById('manualNext');
+    const zoomOutButton = document.getElementById('manualZoomOut');
+    const zoomInButton = document.getElementById('manualZoomIn');
+    const fitButton = document.getElementById('manualFit');
+    const zoomValue = document.getElementById('manualZoomValue');
+
+    if (!pages.length || !stage) return;
+
+    const hashPage = Number((window.location.hash.match(/pagina-(\d+)/) || [])[1]);
+    let currentPage = Number.isFinite(hashPage) && hashPage >= 1 && hashPage <= pages.length
+      ? hashPage - 1
+      : 0;
+    let zoom = 100;
+
+    function updateZoom() {
+      pages[currentPage].style.setProperty('--manual-zoom', zoom + '%');
+      zoomValue.textContent = zoom + '%';
+      zoomOutButton.disabled = zoom <= 75;
+      zoomInButton.disabled = zoom >= 175;
+      stage.scrollLeft = 0;
+      stage.scrollTop = 0;
+    }
+
+    function showPage(index) {
+      currentPage = Math.max(0, Math.min(index, pages.length - 1));
+      pages.forEach(function (page, pageIndex) {
+        page.hidden = pageIndex !== currentPage;
+        if (pageIndex !== currentPage) page.style.removeProperty('--manual-zoom');
+      });
+
+      currentLabel.textContent = String(currentPage + 1);
+      prevButton.disabled = currentPage === 0;
+      nextButton.disabled = currentPage === pages.length - 1;
+      history.replaceState(null, '', '#pagina-' + (currentPage + 1));
+      updateZoom();
+    }
+
+    prevButton.addEventListener('click', function () { showPage(currentPage - 1); });
+    nextButton.addEventListener('click', function () { showPage(currentPage + 1); });
+    zoomOutButton.addEventListener('click', function () {
+      zoom = Math.max(75, zoom - 25);
+      updateZoom();
+    });
+    zoomInButton.addEventListener('click', function () {
+      zoom = Math.min(175, zoom + 25);
+      updateZoom();
+    });
+    fitButton.addEventListener('click', function () {
+      zoom = 100;
+      updateZoom();
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'ArrowLeft') showPage(currentPage - 1);
+      if (event.key === 'ArrowRight') showPage(currentPage + 1);
+    });
+
+    showPage(currentPage);
+  });
+</script>
 {% endblock %}

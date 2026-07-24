@@ -8,6 +8,7 @@ from core.horarios import (
     fin_autocierre_efectivo,
     inferir_turno,
     iso_sin_segundos,
+    requiere_nuevo_tramo,
 )
 from core.autocierre_config import AUTO_CIERRE_LIMITE_SEG, AUTO_CIERRE_TOTAL_HORAS
 from core.horas_extras import calcular_tiempo_total_y_horas_extras
@@ -36,6 +37,16 @@ def _asegurar_cols_pausa(cur):
     if "pausa_acum" not in cols:
         try:
             cur.execute("ALTER TABLE tareas ADD COLUMN pausa_acum INTEGER DEFAULT 0")
+        except Exception:
+            pass
+    if "reinicio_pendiente" not in cols:
+        try:
+            cur.execute("ALTER TABLE tareas ADD COLUMN reinicio_pendiente INTEGER DEFAULT 0")
+        except Exception:
+            pass
+    if "trabajo_acum" not in cols:
+        try:
+            cur.execute("ALTER TABLE tareas ADD COLUMN trabajo_acum INTEGER DEFAULT 0")
         except Exception:
             pass
 
@@ -120,18 +131,23 @@ def ejecutar_autocierre(limite_horas=AUTO_CIERRE_TOTAL_HORAS, max_batch=200):
             asignado_a,
             inicio,
             fin,
+            estado,
             COALESCE(pausa_acum, 0) AS pausa_acum,
             COALESCE(cantidad, 0) AS cantidad,
             COALESCE(horario_extendido, 0) AS horario_extendido,
-            COALESCE(extendido_desde, '') AS extendido_desde
+            COALESCE(extendido_desde, '') AS extendido_desde,
+            COALESCE(pausa_inicio, '') AS pausa_inicio,
+            COALESCE(reinicio_pendiente, 0) AS reinicio_pendiente,
+            COALESCE(trabajo_acum, 0) AS trabajo_acum
         FROM tareas
-        WHERE estado = 'En curso'
+        WHERE (estado = 'En curso'
+               OR (estado = 'Pausada' AND COALESCE(reinicio_pendiente, 0) = 0))
           AND (COALESCE(horario_extendido, 0) = 0)
           AND asignado_a IS NOT NULL
           AND TRIM(asignado_a) != ''
           AND inicio IS NOT NULL
           AND TRIM(inicio) != ''
-        ORDER BY id ASC
+        ORDER BY CASE WHEN estado = 'En curso' THEN 0 ELSE 1 END, id ASC
         LIMIT ?
     """, (int(max_batch),)).fetchall()
 
@@ -151,23 +167,37 @@ def ejecutar_autocierre(limite_horas=AUTO_CIERRE_TOTAL_HORAS, max_batch=200):
             tarea_db = (fila[3] if isinstance(fila, tuple) else fila["proceso"]) or ""
             usuario = (fila[4] if isinstance(fila, tuple) else fila["asignado_a"]) or ""
             inicio_db = (fila[5] if isinstance(fila, tuple) else fila["inicio"]) or ""
-            pausa_acum_db = int((fila[7] if isinstance(fila, tuple) else fila["pausa_acum"]) or 0)
-            cantidad_db = int((fila[8] if isinstance(fila, tuple) else fila["cantidad"]) or 0)
-            horario_extendido_db = int((fila[9] if isinstance(fila, tuple) else fila["horario_extendido"]) or 0)
-            extendido_desde_db = (fila[10] if isinstance(fila, tuple) else fila["extendido_desde"]) or ""
+            estado_db = (fila[7] if isinstance(fila, tuple) else fila["estado"]) or ""
+            pausa_acum_db = int((fila[8] if isinstance(fila, tuple) else fila["pausa_acum"]) or 0)
+            cantidad_db = int((fila[9] if isinstance(fila, tuple) else fila["cantidad"]) or 0)
+            horario_extendido_db = int((fila[10] if isinstance(fila, tuple) else fila["horario_extendido"]) or 0)
+            extendido_desde_db = (fila[11] if isinstance(fila, tuple) else fila["extendido_desde"]) or ""
+            trabajo_acum_db = int((fila[14] if isinstance(fila, tuple) else fila["trabajo_acum"]) or 0)
 
             dt_inicio = _parse_iso(inicio_db)
             if not dt_inicio:
                 continue
 
             turno = inferir_turno(dt_inicio)
+            if estado_db.strip() == "Pausada":
+                if requiere_nuevo_tramo(dt_inicio, ahora, turno):
+                    cur.execute("""
+                        UPDATE tareas
+                           SET reinicio_pendiente = 1
+                         WHERE id = ?
+                           AND asignado_a = ?
+                           AND estado = 'Pausada'
+                    """, (tarea_id, usuario))
+                    conn.commit()
+                continue
+
             fin_efectivo = fin_autocierre_efectivo(
                 dt_inicio=dt_inicio,
                 dt_ahora=ahora,
                 turno=turno,
-                limite_seg=limite_seg,
+                limite_seg=max(0, limite_seg - trabajo_acum_db),
                 pausa_acum_seg=pausa_acum_db,
-                limite_registro_seg=AUTO_CIERRE_LIMITE_SEG,
+                limite_registro_seg=max(0, AUTO_CIERRE_LIMITE_SEG - trabajo_acum_db),
             )
             if not fin_efectivo:
                 continue
@@ -187,6 +217,7 @@ def ejecutar_autocierre(limite_horas=AUTO_CIERRE_TOTAL_HORAS, max_batch=200):
                     pausa_acum_seg=pausa_acum_db,
                     horario_extendido=horario_extendido_db,
                     extendido_desde=extendido_desde_db,
+                    trabajo_acum_seg=trabajo_acum_db,
                 )
             except Exception:
                 tiempo_total = ""
