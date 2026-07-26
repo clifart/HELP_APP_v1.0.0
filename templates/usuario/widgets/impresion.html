@@ -10,7 +10,11 @@
                     <tr class="section-row">
                         <td class="col-num">II</td>
                         <td class="col-desc section-title">
-                            IMPRESIÓN (MÁQUINAS SORMZ, SORM, GTO46, DIGITAL...)
+                            {% if es_impresion_digital %}
+                            IMPRESIÓN (DIGITAL)
+                            {% else %}
+                            IMPRESIÓN (MÁQUINAS SORMZ, GTO46...)
+                            {% endif %}
                         </td>
                         <td class="col-opt opt-head"></td>
                         <td class="col-opt opt-head"></td>
@@ -29,7 +33,11 @@
                     <tr>
                         <td class="col-num">2</td>
                         <td class="col-desc">
+                            {% if es_impresion_digital %}
+                            Verificar archivo con el número de OP y sherpa aprobada.
+                            {% else %}
                             Verificar planchas, OP de las planchas Vs. OP Sherpa APROBADA
+                            {% endif %}
                         </td>
                         <td class="col-opt"><input type="radio" name="p2_verificar_planchas" value="SI" required></td>
                         <td class="col-opt"><input type="radio" name="p2_verificar_planchas" value="NO"></td>
@@ -65,6 +73,15 @@
                         <td class="col-opt"><input type="radio" name="p42_tonos_muestra_aprobada" value="NO"></td>
                         <td class="col-opt"><input type="radio" name="p42_tonos_muestra_aprobada" value="NA"></td>
                     </tr>
+                    {% if not es_impresion_digital %}
+                    <tr>
+                        <td class="col-num">5</td>
+                        <td class="col-desc">Lavado de máquina para la siguiente impresión</td>
+                        <td class="col-opt"><input type="radio" name="p5_lavado_maquina_siguiente_impresion" value="SI" required></td>
+                        <td class="col-opt"><input type="radio" name="p5_lavado_maquina_siguiente_impresion" value="NO"></td>
+                        <td class="col-opt"><input type="radio" name="p5_lavado_maquina_siguiente_impresion" value="NA"></td>
+                    </tr>
+                    {% endif %}
 
     {# FIN ZONA EDITABLE. Mantener el bloque siguiente para que guarde responsable, fecha y observaciones. #}
 

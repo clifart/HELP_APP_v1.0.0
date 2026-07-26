@@ -224,9 +224,20 @@
         const rebobinadoOpciones = form
           ? form.querySelectorAll('input[name="flexo_rebobinado"]')
           : [];
-        const filasDatosRollo = form
-          ? form.querySelectorAll('[data-flexo-dato-rollo]')
+        const filaRebobinado = form
+          ? form.querySelector('input[name="flexo_rebobinado"]')?.closest('tr')
+          : null;
+        const filasDeshabilitables = form
+          ? Array.from(form.querySelectorAll('tbody[data-module="flexo"] tr'))
+              .filter(fila => fila !== filaRebobinado)
           : [];
+        const controlesDeshabilitables = filasDeshabilitables.flatMap(fila =>
+          Array.from(fila.querySelectorAll('input, select, textarea'))
+        );
+
+        controlesDeshabilitables.forEach(campo => {
+          campo.dataset.flexoRequiredOriginal = campo.required ? "1" : "0";
+        });
 
         function num(v) {
           const n = parseFloat(v);
@@ -262,21 +273,30 @@
           if (hRollos) hRollos.value = String(rollos);
         }
 
-        function actualizarDatosRollo() {
+        function actualizarModoRebobinado() {
           const rebobinadoSi = form
             ? form.querySelector('input[name="flexo_rebobinado"][value="SI"]')
             : null;
           const deshabilitar = Boolean(rebobinadoSi && rebobinadoSi.checked);
 
-          filasDatosRollo.forEach(fila => {
+          filasDeshabilitables.forEach(fila => {
             fila.classList.toggle('flexo-dato-deshabilitado', deshabilitar);
-            fila.querySelectorAll('input').forEach(campo => {
-              campo.disabled = deshabilitar;
-            });
           });
 
-          if (inMts) inMts.required = !deshabilitar;
-          if (inEtq) inEtq.required = !deshabilitar;
+          controlesDeshabilitables.forEach(campo => {
+            campo.disabled = deshabilitar;
+            campo.required = !deshabilitar && campo.dataset.flexoRequiredOriginal === "1";
+
+            if (deshabilitar) {
+              if (campo.matches('input[type="radio"], input[type="checkbox"]')) {
+                campo.checked = false;
+              } else if (!campo.readOnly && campo.type !== 'hidden') {
+                campo.value = '';
+              }
+            }
+          });
+
+          calcular();
         }
 
         [inMts, inEtq, inPesoEtq, inTara].forEach(inp => {
@@ -284,11 +304,11 @@
         });
 
         rebobinadoOpciones.forEach(opcion => {
-          opcion.addEventListener('change', actualizarDatosRollo);
+          opcion.addEventListener('change', actualizarModoRebobinado);
         });
 
         calcular();
-        actualizarDatosRollo();
+        actualizarModoRebobinado();
       });
     </script>
 

@@ -47,10 +47,25 @@ def _ensure_historial_tables(cur):
             p3_alistamiento_corte_papel TEXT,
             p4_control_50_tiros TEXT,
             p41_tonos_carta_color TEXT,
-            p42_tonos_muestra_aprobada TEXT
+            p42_tonos_muestra_aprobada TEXT,
+            p5_lavado_maquina_siguiente_impresion TEXT
         )
         """
     )
+
+    cur.execute("PRAGMA table_info(checklist_impresion)")
+    cols_checklist = [
+        row[1] if not isinstance(row, sqlite3.Row) else row["name"]
+        for row in cur.fetchall()
+    ]
+    if "p5_lavado_maquina_siguiente_impresion" not in cols_checklist:
+        try:
+            cur.execute(
+                "ALTER TABLE checklist_impresion "
+                "ADD COLUMN p5_lavado_maquina_siguiente_impresion TEXT"
+            )
+        except sqlite3.OperationalError:
+            pass
 
     cur.execute("PRAGMA table_info(historial_tareas)")
     cols = [row[1] if not isinstance(row, sqlite3.Row) else row["name"] for row in cur.fetchall()]

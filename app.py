@@ -11,7 +11,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from core.db import ensure_schema  # solo esto desde core.db aquí
 
 
-APP_VERSION = "1.2.12"
+APP_VERSION = "1.2.13"
 
 
 # Intentamos importar la carpeta diaria; si falla, no rompemos la app
@@ -194,11 +194,13 @@ def create_app():
         from werkzeug.security import check_password_hash
 
         if request.method == "GET":
-            rol_actual = (session.get("rol") or "").strip().lower()
-            if rol_actual == "admin":
-                return redirect(url_for("admin.panel"))
-            if rol_actual == "usuario":
-                return redirect(url_for("usuario.panel"))
+            # La URL inicial siempre debe mostrar el login. Conservamos los
+            # mensajes flash creados por una redirección, pero descartamos la
+            # sesión autenticada que pudiera quedar guardada en el navegador.
+            mensajes_pendientes = session.get("_flashes")
+            session.clear()
+            if mensajes_pendientes:
+                session["_flashes"] = mensajes_pendientes
 
         if request.method == "POST":
             nombre = (request.form.get("nombre") or "").strip()

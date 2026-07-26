@@ -79,6 +79,7 @@
             <option value="Auxiliar Pegue">Auxiliar Pegue</option>
             <option value="Encuadernación">Encuadernación</option>
             <option value="Revisión">Revisión</option>
+            <option value="Entrega y cierre de OP">Entrega y cierre de OP</option>
             <option value="Reproceso">Reproceso</option>
             <option value="Mantenimiento preventivo">Mantenimiento preventivo</option>
             <option value="Varios">Varios</option>
@@ -855,6 +856,20 @@
             const cantidadInput  = fila.querySelector('.cantidad-input');
             const btnFinalizar   = fila.querySelector('.btn-finalizar');
             const btnChecklist   = fila.querySelector('.btn-checklist');
+            if (cantidadInput && !cantidadInput.readOnly) {
+                const seleccionarCero = () => {
+                    if (!cantidadInput.disabled && cantidadInput.value.trim() === "0") {
+                        setTimeout(() => cantidadInput.select(), 0);
+                    }
+                };
+                cantidadInput.addEventListener('focus', seleccionarCero);
+                cantidadInput.addEventListener('pointerup', (event) => {
+                    if (!cantidadInput.disabled && cantidadInput.value.trim() === "0") {
+                        event.preventDefault();
+                        cantidadInput.select();
+                    }
+                });
+            }
             if ((checklistOk || omiteControles) && btnChecklist) {
                 btnChecklist.classList.add("disabled");
                 btnChecklist.dataset.locked = "1";

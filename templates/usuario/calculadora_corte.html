@@ -111,6 +111,28 @@
   padding-bottom: 10px;
   white-space: nowrap;
 }
+.calc-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+.calc-reset {
+  border: 1.5px solid #0f6a4f;
+  border-radius: 8px;
+  padding: 9px 16px;
+  background: #fff;
+  color: #0f6a4f;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.calc-reset:hover,
+.calc-reset:focus-visible {
+  background: #0f6a4f;
+  color: #fff;
+  outline: none;
+}
 
 /* Radio pills */
 .radio-pills {
@@ -291,7 +313,7 @@
         <select class="calc-select" id="presetPliego">
           <option value="">Personalizado...</option>
           <option value="70,100" selected>70 × 100 cm</option>
-          <option value="60,90">65 × 90 cm</option>
+          <option value="60,90">60 × 90 cm</option>
         </select>
       </div>
     </div>
@@ -381,6 +403,9 @@
       <div class="calc-card-title" id="tituloVisualizacion">Visualización del corte</div>
       <div class="svg-wrapper" id="svgWrapper"></div>
       <div class="svg-legend" id="svgLegend"></div>
+      <div class="calc-actions">
+        <button type="button" class="calc-reset" id="btnRestablecer">Restablecer valores</button>
+      </div>
     </div>
 
   </div>
@@ -429,6 +454,26 @@
   $('piezaW').addEventListener('input', () => { w = parseFloat($('piezaW').value) || 0; recalcular(); });
   $('piezaH').addEventListener('input', () => { h = parseFloat($('piezaH').value) || 0; recalcular(); });
   $('cantidad').addEventListener('input', () => { qty = parseInt($('cantidad').value) || 0; recalcular(); });
+  $('btnRestablecer').addEventListener('click', () => {
+    $('piezaW').value = 0;
+    $('piezaH').value = 0;
+    $('cantidad').value = 0;
+    w = 0;
+    h = 0;
+    qty = 0;
+
+    // Si el pliego es personalizado, sus campos también vuelven a cero.
+    if (!$('presetPliego').value) {
+      $('pliegoW').value = 0;
+      $('pliegoH').value = 0;
+      W = 0;
+      H = 0;
+    }
+
+    recalcular();
+    $('piezaW').focus();
+    $('piezaW').select();
+  });
 
   // ===== CÁLCULOS CORE =====
 
@@ -579,13 +624,19 @@
     const scale = Math.min(maxSVGW / W, maxSVGH / H);
     const svgW = W * scale;
     const svgH = H * scale;
+    const plotX = 34;
+    const plotY = 4;
+    const svgTotalW = svgW + plotX + 4;
+    const svgTotalH = svgH + plotY + 24;
 
     const col = floor(W / pw);
     const fil = floor(H / ph);
     const pxW = pw * scale;
     const pxH = ph * scale;
 
-    let svg = `<svg width="${svgW.toFixed(1)}" height="${svgH.toFixed(1)}" viewBox="0 0 ${svgW.toFixed(1)} ${svgH.toFixed(1)}" style="background:#f0f0f0; border:1px solid #ccc;">`;
+    let svg = `<svg width="${svgTotalW.toFixed(1)}" height="${svgTotalH.toFixed(1)}" viewBox="0 0 ${svgTotalW.toFixed(1)} ${svgTotalH.toFixed(1)}" role="img" aria-label="Pliego de ${fmt(W)} por ${fmt(H)} centímetros">`;
+    svg += `<g transform="translate(${plotX} ${plotY})">`;
+    svg += `<rect x="0" y="0" width="${svgW.toFixed(1)}" height="${svgH.toFixed(1)}" fill="#f0f0f0" stroke="#aaa" stroke-width="1" rx="2"/>`;
 
     // Piezas principales
     for (let c = 0; c < col; c++) {
@@ -607,9 +658,13 @@
       svg += `<rect x="0" y="${sobY}" width="${(col * pw * scale).toFixed(2)}" height="${(svgH - parseFloat(sobY)).toFixed(2)}" fill="#e0e0e0" opacity="0.7"/>`;
     }
 
-    // Dimensiones
-    svg += `<text x="${(svgW/2).toFixed(1)}" y="${(svgH-3).toFixed(1)}" text-anchor="middle" font-size="9" fill="#555">${fmt(W)} cm</text>`;
-    svg += `<text x="4" y="${(svgH/2).toFixed(1)}" text-anchor="middle" font-size="9" fill="#555" transform="rotate(-90 4 ${(svgH/2).toFixed(1)})">${fmt(H)} cm</text>`;
+    svg += '</g>';
+
+    // Dimensiones fuera del área de corte para evitar texto recortado.
+    const centerX = plotX + svgW / 2;
+    const centerY = plotY + svgH / 2;
+    svg += `<text x="${centerX.toFixed(1)}" y="${(plotY + svgH + 17).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="#2f4f46">${fmt(W)} cm</text>`;
+    svg += `<text x="12" y="${centerY.toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="#2f4f46" transform="rotate(-90 12 ${centerY.toFixed(1)})">${fmt(H)} cm</text>`;
 
     svg += '</svg>';
     $('svgWrapper').innerHTML = svg;
@@ -629,8 +684,14 @@
     const scale = Math.min(maxSVGW / W, maxSVGH / H);
     const svgW = W * scale;
     const svgH = H * scale;
+    const plotX = 34;
+    const plotY = 4;
+    const svgTotalW = svgW + plotX + 4;
+    const svgTotalH = svgH + plotY + 24;
 
-    let svg = `<svg width="${svgW.toFixed(1)}" height="${svgH.toFixed(1)}" viewBox="0 0 ${svgW.toFixed(1)} ${svgH.toFixed(1)}" style="background:#f0f0f0; border:1px solid #ccc;">`;
+    let svg = `<svg width="${svgTotalW.toFixed(1)}" height="${svgTotalH.toFixed(1)}" viewBox="0 0 ${svgTotalW.toFixed(1)} ${svgTotalH.toFixed(1)}" role="img" aria-label="Pliego de ${fmt(W)} por ${fmt(H)} centímetros">`;
+    svg += `<g transform="translate(${plotX} ${plotY})">`;
+    svg += `<rect x="0" y="0" width="${svgW.toFixed(1)}" height="${svgH.toFixed(1)}" fill="#f0f0f0" stroke="#aaa" stroke-width="1" rx="2"/>`;
 
     if (!cfg.isVertSplit && cfg.h1 !== null) {
       // Split horizontal: Zona1 arriba (h1), Zona2 abajo (h2)
@@ -683,7 +744,12 @@
       return;
     }
 
-    svg += `<text x="${(svgW/2).toFixed(1)}" y="${(svgH-3).toFixed(1)}" text-anchor="middle" font-size="9" fill="#555">${fmt(W)} cm</text>`;
+    svg += '</g>';
+
+    const centerX = plotX + svgW / 2;
+    const centerY = plotY + svgH / 2;
+    svg += `<text x="${centerX.toFixed(1)}" y="${(plotY + svgH + 17).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="#2f4f46">${fmt(W)} cm</text>`;
+    svg += `<text x="12" y="${centerY.toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="#2f4f46" transform="rotate(-90 12 ${centerY.toFixed(1)})">${fmt(H)} cm</text>`;
     svg += '</svg>';
     $('svgWrapper').innerHTML = svg;
     $('svgLegend').innerHTML = `

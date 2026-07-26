@@ -302,6 +302,10 @@ def _modulo_por_proceso(nombre: str) -> Optional[str]:
     if "REVISION" in norm:
         return "encuadernacion"
 
+    # ENTREGA Y CIERRE DE OP usa su módulo independiente (punto VIII).
+    if "ENTREGA" in norm and "CIERRE" in norm:
+        return "entrega_cierre"
+
     # PAQUETE
     if "PAQUETE" in norm:
         return "paquete"
@@ -1650,6 +1654,7 @@ def checklist_impresion():
 
     proceso = (proceso or "").strip()
     es_corte = _normalizar_proceso(proceso).startswith("CORTE")
+    es_impresion_digital = "DIGITAL" in _normalizar_proceso(proceso)
 
     # ⛔ Bloquear checklist SOLO si ESA tarea (OP + proceso + usuario) está Pausada
     if op_no and proceso and (not tarea_id):
@@ -1693,9 +1698,23 @@ def checklist_impresion():
             p3_alistamiento_corte_papel TEXT,
             p4_control_50_tiros TEXT,
             p41_tonos_carta_color TEXT,
-            p42_tonos_muestra_aprobada TEXT
+            p42_tonos_muestra_aprobada TEXT,
+            p5_lavado_maquina_siguiente_impresion TEXT
         )
     """)
+
+    cols_checklist_impresion = {
+        row[1] if isinstance(row, tuple) else row["name"]
+        for row in cur.execute("PRAGMA table_info(checklist_impresion)").fetchall()
+    }
+    if "p5_lavado_maquina_siguiente_impresion" not in cols_checklist_impresion:
+        try:
+            cur.execute(
+                "ALTER TABLE checklist_impresion "
+                "ADD COLUMN p5_lavado_maquina_siguiente_impresion TEXT"
+            )
+        except sqlite3.OperationalError:
+            pass
 
     _asegurar_tabla_checklist_modulos(cur)
 
@@ -1739,6 +1758,8 @@ def checklist_impresion():
         data_dict = request.form.to_dict(flat=True)
         data_dict.pop("modulo", None)
         data_dict.pop("id", None)
+        if es_impresion_digital:
+            data_dict.pop("p5_lavado_maquina_siguiente_impresion", None)
 
         cur.execute("""
             INSERT INTO checklist_modulos (usuario, op_no, modulo, tarea_id, fecha, data_json)
@@ -1761,6 +1782,9 @@ def checklist_impresion():
             p4 = (request.form.get('p4_control_50_tiros') or 'NA').strip()
             p41 = (request.form.get('p41_tonos_carta_color') or 'NA').strip()
             p42 = (request.form.get('p42_tonos_muestra_aprobada') or 'NA').strip()
+            p5 = None if es_impresion_digital else (
+                request.form.get('p5_lavado_maquina_siguiente_impresion') or 'NA'
+            ).strip()
 
             cur.execute("""
                 INSERT INTO checklist_impresion (
@@ -1770,9 +1794,10 @@ def checklist_impresion():
                     p3_alistamiento_corte_papel,
                     p4_control_50_tiros,
                     p41_tonos_carta_color,
-                    p42_tonos_muestra_aprobada
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (usuario, op_no, fecha, p1, p2, p3, p4, p41, p42))
+                    p42_tonos_muestra_aprobada,
+                    p5_lavado_maquina_siguiente_impresion
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (usuario, op_no, fecha, p1, p2, p3, p4, p41, p42, p5))
 
         conn.commit()
         conn.close()
@@ -1800,6 +1825,8 @@ def checklist_impresion():
         template_name = "usuario/checklist_mantenimiento_sormz_sorm_barnizado.html"
     if modulo_activo == "encuadernacion":
         template_name = "usuario/checklist_encuadernacion.html"
+    if modulo_activo == "entrega_cierre":
+        template_name = "usuario/checklist_entrega_cierre.html"
     if modulo_activo == "pegue" or ("pegue" in modulo_activo):
         template_name = "usuario/checklist_pegue_cajas.html"
     if modulo_activo == "varios":
@@ -1811,6 +1838,8 @@ def checklist_impresion():
             usuario=usuario,
             modulo_activo=modulo_activo,
             es_corte=es_corte,
+            es_impresion_digital=es_impresion_digital,
+            proceso=proceso,
             tarea_id=tarea_id_int or "",
             fecha_checklist=now_iso()[:10]
         )
@@ -1821,6 +1850,8 @@ def checklist_impresion():
             usuario=usuario,
             modulo_activo=modulo_activo,
             es_corte=es_corte,
+            es_impresion_digital=es_impresion_digital,
+            proceso=proceso,
             tarea_id=tarea_id_int or "",
             fecha_checklist=now_iso()[:10]
         )
