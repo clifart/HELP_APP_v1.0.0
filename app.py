@@ -11,7 +11,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from core.db import ensure_schema  # solo esto desde core.db aquí
 
 
-APP_VERSION = "1.2.13"
+APP_VERSION = "1.2.14"
 
 
 # Intentamos importar la carpeta diaria; si falla, no rompemos la app

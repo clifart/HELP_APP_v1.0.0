@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, session, flash, jsonify, current_app
+from flask import render_template, request, redirect, url_for, session, flash, jsonify, current_app, send_from_directory
 from . import usuario_bp
 from core.db import get_db_connection, ensure_tareas_columns
 from core.horarios import (
@@ -570,6 +570,7 @@ def panel():
     conn = get_db_connection()
     cur = conn.cursor()
     ensure_tareas_columns(conn)
+    _asegurar_cols_pausa(cur)
 
     tareas_rows = cur.execute("""
         SELECT
@@ -1865,4 +1866,15 @@ def calculadora_corte():
         flash("Acceso no autorizado.", "danger")
         return redirect(url_for('login'))
     return render_template('usuario/calculadora_corte.html')
+
+
+@usuario_bp.route('/calculadora-papel')
+def calculadora_papel():
+    if not _solo_usuario():
+        flash("Acceso no autorizado.", "danger")
+        return redirect(url_for('login'))
+    return send_from_directory(
+        current_app.root_path + "/prototipos",
+        "calculadora_papel.html",
+    )
 

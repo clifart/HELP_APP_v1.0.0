@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calculadora de papel | TrazOP</title>
+  <style>
+    :root {
+      --verde: #0f6a4f;
+      --verde-oscuro: #09513d;
+      --verde-claro: #e9f6f1;
+      --borde: #c8ddd6;
+      --texto: #25332e;
+      --muted: #68756f;
+      --fondo: #f3f7f5;
+      --blanco: #fff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--fondo);
+      color: var(--texto);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .page {
+      width: min(100% - 24px, 760px);
+      margin: 24px auto 48px;
+    }
+
+    .header {
+      margin-bottom: 16px;
+      padding: 20px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--verde), #168866);
+      color: var(--blanco);
+      box-shadow: 0 8px 24px rgba(15, 106, 79, 0.18);
+    }
+
+    .header h1 {
+      margin: 0 0 6px;
+      font-size: clamp(24px, 5vw, 34px);
+    }
+
+    .header p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.84);
+      line-height: 1.45;
+    }
+
+    .card {
+      margin-bottom: 14px;
+      padding: 18px;
+      border: 1px solid #dce8e3;
+      border-radius: 14px;
+      background: var(--blanco);
+      box-shadow: 0 5px 18px rgba(34, 68, 56, 0.08);
+    }
+
+    .card-title {
+      margin: 0 0 14px;
+      color: var(--verde);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .inputs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .field input {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 11px;
+      border: 1.5px solid var(--borde);
+      border-radius: 9px;
+      background: #fbfefd;
+      color: var(--texto);
+      font-size: 16px;
+    }
+
+    .field input:focus {
+      border-color: var(--verde);
+      outline: 3px solid rgba(15, 106, 79, 0.12);
+      background: var(--blanco);
+    }
+
+    .materials {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .material input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .material label {
+      display: grid;
+      min-height: 78px;
+      padding: 12px;
+      border: 2px solid var(--borde);
+      border-radius: 11px;
+      background: #fbfefd;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .material strong {
+      color: var(--verde-oscuro);
+      font-size: 15px;
+    }
+
+    .material span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .material input:checked + label {
+      border-color: var(--verde);
+      background: var(--verde-claro);
+      box-shadow: 0 0 0 3px rgba(15, 106, 79, 0.1);
+    }
+
+    .material input:focus-visible + label {
+      outline: 3px solid rgba(15, 106, 79, 0.22);
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .result {
+      display: grid;
+      place-items: center;
+      min-height: 122px;
+      padding: 16px;
+      border-radius: 13px;
+      background: var(--verde-claro);
+      text-align: center;
+    }
+
+    .result output {
+      color: var(--verde);
+      font-size: clamp(36px, 8vw, 54px);
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .result span {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .package-result {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e1ece7;
+    }
+
+    .package-item {
+      padding: 10px;
+      border-radius: 9px;
+      background: #f7faf9;
+      text-align: center;
+    }
+
+    .package-item strong {
+      display: block;
+      color: var(--verde-oscuro);
+      font-size: 19px;
+    }
+
+    .package-item span {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .formula {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 14px;
+    }
+
+    .reset {
+      min-height: 43px;
+      padding: 10px 18px;
+      border: 1.5px solid var(--verde);
+      border-radius: 9px;
+      background: var(--blanco);
+      color: var(--verde);
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .reset:hover,
+    .reset:focus-visible {
+      background: var(--verde);
+      color: var(--blanco);
+      outline: none;
+    }
+
+    @media (max-width: 620px) {
+      .page { width: min(100% - 14px, 760px); margin-top: 8px; }
+      .header, .card { padding: 15px; }
+      .inputs, .materials { grid-template-columns: 1fr; }
+      .package-result { grid-template-columns: 1fr 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="header">
+      <h1>Calculadora de papel</h1>
+      <p>Calcula formatos, pliegos y paquetes necesarios para una orden de producción.</p>
+    </header>
+
+    <section class="card" aria-labelledby="datos-title">
+      <h2 class="card-title" id="datos-title">Datos del trabajo</h2>
+      <div class="inputs">
+        <div class="field">
+          <label for="unidades">Cantidad de unidades</label>
+          <input id="unidades" type="number" min="0" step="1" value="0" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="cabidas">Cabidas por formato</label>
+          <input id="cabidas" type="number" min="0" step="1" value="0" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="division">División del pliego</label>
+          <input id="division" type="number" min="0" step="1" value="0" inputmode="numeric">
+        </div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="material-title">
+      <h2 class="card-title" id="material-title">Tipo de material</h2>
+      <div class="materials">
+        <div class="material">
+          <input id="papel" type="radio" name="material" value="papel" data-paquete="500" checked>
+          <label for="papel"><strong>Papel</strong><span>Paquete de 500 pliegos</span></label>
+        </div>
+        <div class="material">
+          <input id="cartulina" type="radio" name="material" value="cartulina" data-paquete="100">
+          <label for="cartulina"><strong>Cartulina</strong><span>Paquete de 100 pliegos</span></label>
+        </div>
+        <div class="material">
+          <input id="adhesivo" type="radio" name="material" value="adhesivo" data-paquete="100">
+          <label for="adhesivo"><strong>Adhesivo</strong><span>Paquete de 100 pliegos</span></label>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="resultado-title" aria-live="polite">
+      <h2 class="card-title" id="resultado-title">Resultado</h2>
+      <div class="results">
+        <div class="result">
+          <output id="formatos">0</output>
+          <span>Número de formatos</span>
+        </div>
+        <div class="result">
+          <output id="pliegos">0</output>
+          <span>Pliegos necesarios</span>
+        </div>
+      </div>
+
+      <div class="package-result">
+        <div class="package-item"><strong id="paquetes">0</strong><span>Paquetes completos</span></div>
+        <div class="package-item"><strong id="pliegosCompra">0</strong><span>Pliegos comprados</span></div>
+        <div class="package-item"><strong id="sobrante">0</strong><span>Pliegos sobrantes</span></div>
+      </div>
+
+      <p class="formula" id="formula">Ingresa unidades, cabidas y división del pliego.</p>
+
+      <div class="actions">
+        <button class="reset" id="restablecer" type="button">Volver a cero</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const unidades = document.getElementById('unidades');
+      const cabidas = document.getElementById('cabidas');
+      const division = document.getElementById('division');
+      const formatos = document.getElementById('formatos');
+      const pliegos = document.getElementById('pliegos');
+      const paquetes = document.getElementById('paquetes');
+      const pliegosCompra = document.getElementById('pliegosCompra');
+      const sobrante = document.getElementById('sobrante');
+      const formula = document.getElementById('formula');
+      const restablecer = document.getElementById('restablecer');
+      const materiales = [...document.querySelectorAll('input[name="material"]')];
+
+      const enteroPositivo = campo => Math.max(0, Math.floor(Number(campo.value) || 0));
+      const formatoNumero = valor => new Intl.NumberFormat('es-CO').format(valor);
+
+      function calcular() {
+        const totalUnidades = enteroPositivo(unidades);
+        const cabidasFormato = enteroPositivo(cabidas);
+        const divisionesPliego = enteroPositivo(division);
+        const material = materiales.find(control => control.checked) || materiales[0];
+        const capacidadPaquete = Number(material.dataset.paquete) || 0;
+
+        const totalFormatos = cabidasFormato > 0
+          ? Math.ceil(totalUnidades / cabidasFormato)
+          : 0;
+        const totalPliegos = divisionesPliego > 0
+          ? Math.ceil(totalFormatos / divisionesPliego)
+          : 0;
+        const totalPaquetes = capacidadPaquete > 0
+          ? Math.ceil(totalPliegos / capacidadPaquete)
+          : 0;
+        const totalCompra = totalPaquetes * capacidadPaquete;
+        const totalSobrante = Math.max(0, totalCompra - totalPliegos);
+
+        formatos.value = formatoNumero(totalFormatos);
+        formatos.textContent = formatoNumero(totalFormatos);
+        pliegos.value = formatoNumero(totalPliegos);
+        pliegos.textContent = formatoNumero(totalPliegos);
+        paquetes.textContent = formatoNumero(totalPaquetes);
+        pliegosCompra.textContent = formatoNumero(totalCompra);
+        sobrante.textContent = formatoNumero(totalSobrante);
+
+        formula.textContent = totalUnidades > 0 && cabidasFormato > 0 && divisionesPliego > 0
+          ? `${formatoNumero(totalUnidades)} unidades ÷ ${cabidasFormato} cabidas = ${formatoNumero(totalFormatos)} formatos; ${formatoNumero(totalFormatos)} formatos ÷ ${divisionesPliego} = ${formatoNumero(totalPliegos)} pliegos.`
+          : 'Ingresa unidades, cabidas y división del pliego.';
+      }
+
+      [...document.querySelectorAll('input')].forEach(control => {
+        control.addEventListener('input', calcular);
+        control.addEventListener('change', calcular);
+      });
+
+      restablecer.addEventListener('click', () => {
+        unidades.value = 0;
+        cabidas.value = 0;
+        division.value = 0;
+        materiales[0].checked = true;
+        calcular();
+        unidades.focus();
+        unidades.select();
+      });
+
+      calcular();
+      unidades.focus();
+      unidades.select();
+    })();
+  </script>
+</body>
+</html>
